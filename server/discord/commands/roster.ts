@@ -55,6 +55,9 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
       return;
     }
 
+    // Fetch all guild members to ensure accurate role counts
+    await guild.members.fetch();
+
     // Count role members and sort teams
     const teamsWithCounts = await Promise.all(teams.map(async team => {
       const role = guild.roles.cache.get(team.roleId);
