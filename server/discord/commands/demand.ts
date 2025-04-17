@@ -45,28 +45,27 @@ const demandCommand = {
   }
 };
 
-// Arabic version - طلب command
+// Arabic version - طلب command (simplified, no subcommands)
 const demandArabicCommand = {
   data: new SlashCommandBuilder()
     .setName('طلب')
-    .setDescription('طلب انضمام لفريق أو طلب مغادرة فريقك الحالي')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('انضمام')
-        .setDescription('طلب انضمام لفريق')
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('مغادرة')
-        .setDescription('طلب مغادرة فريقك الحالي')
+    .setDescription('طلب انضمام لفريق أو مغادرة فريقك الحالي')
+    .addStringOption(option =>
+      option.setName('نوع')
+        .setDescription('نوع الطلب')
+        .setRequired(true)
+        .addChoices(
+          { name: 'انضمام', value: 'انضمام' },
+          { name: 'مغادرة', value: 'مغادرة' }
+        )
     ),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const subcommand = interaction.options.getSubcommand();
+    const requestType = interaction.options.getString('نوع');
     
-    if (subcommand === 'انضمام') {
+    if (requestType === 'انضمام') {
       await handleSignRequest(interaction);
-    } else if (subcommand === 'مغادرة') {
+    } else if (requestType === 'مغادرة') {
       await handleReleaseRequest(interaction);
     }
   }
@@ -170,14 +169,15 @@ async function handleReleaseRequest(interaction: ChatInputCommandInteraction): P
       return;
     }
     
-    // Create embed for release request
+    // Create smaller, compact embed for release request
     const embed = new EmbedBuilder()
       .setColor('#e74c3c')
-      .setTitle('📤 طلب مغادرة')
-      .setDescription(`اللاعب ${user} قد طلب المغادرة من فريق ${team.emoji} ${team.name}`)
-      .setThumbnail(user.displayAvatarURL())
-      .setTimestamp()
-      .setFooter({ text: 'Win Lock Bot • نظام الانتقالات' });
+      .setAuthor({ 
+        name: `طلب مغادرة من ${user.username}`,
+        iconURL: user.displayAvatarURL()
+      })
+      .setDescription(`${user} يطلب المغادرة من فريق ${team.emoji} ${team.name}`)
+      .setFooter({ text: 'Win Lock Bot' });
     
     // Get transaction channel
     const guild = interaction.guild;
@@ -216,9 +216,9 @@ async function handleReleaseRequest(interaction: ChatInputCommandInteraction): P
       reason: 'Player requested release'
     });
     
-    // Confirm to user
+    // Confirm to user with simpler message
     await interaction.editReply({ 
-      content: `تم إرسال طلب المغادرة من فريق ${team.emoji} ${team.name} بنجاح. سيتم إشعار كابتن الفريق.`
+      content: `✅ تم إرسال طلب المغادرة من فريق ${team.emoji} ${team.name}. تم إشعار الكابتن.`
     });
   } catch (error) {
     console.error('Error handling release request:', error);
@@ -262,14 +262,15 @@ async function processTeamSelection(
       role.name.toLowerCase().includes(team.name.toLowerCase())
     );
     
-    // Create embed for sign request
+    // Create compact embed for sign request
     const embed = new EmbedBuilder()
       .setColor('#2ecc71')
-      .setTitle('📥 طلب انضمام')
-      .setDescription(`اللاعب ${user} قد طلب الانضمام إلى فريق ${team.emoji} ${team.name}`)
-      .setThumbnail(user.displayAvatarURL())
-      .setTimestamp()
-      .setFooter({ text: 'Win Lock Bot • نظام الانتقالات' });
+      .setAuthor({ 
+        name: `طلب انضمام من ${user.username}`,
+        iconURL: user.displayAvatarURL()
+      })
+      .setDescription(`${user} يطلب الانضمام إلى فريق ${team.emoji} ${team.name}`)
+      .setFooter({ text: 'Win Lock Bot' });
     
     // Get transaction channel
     const transactionChannel = await findChannel(guild, channels.transactions);
@@ -307,13 +308,13 @@ async function processTeamSelection(
       reason: 'Player requested signing'
     });
     
-    // Confirm to user
+    // Confirm to user with simpler message
     await user.send({
       embeds: [
         new EmbedBuilder()
           .setColor('#2ecc71')
           .setTitle('✅ تم إرسال طلب الانضمام')
-          .setDescription(`لقد تم إرسال طلب انضمامك إلى فريق ${team.emoji} ${team.name} بنجاح. سيتم إشعار كابتن الفريق.`)
+          .setDescription(`تم إرسال طلبك إلى فريق ${team.emoji} ${team.name}. تم إشعار الكابتن.`)
       ]
     });
   } catch (error) {

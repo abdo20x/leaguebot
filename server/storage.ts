@@ -1,29 +1,11 @@
 import {
-  settings,
-  channels,
-  teams,
-  players,
-  coaches,
-  coachAssignments,
-  transactions,
-  setupProgress,
-  type Settings,
-  type InsertSettings,
-  type Channels,
-  type InsertChannels,
-  type Team,
-  type InsertTeam,
-  type Player,
-  type InsertPlayer,
-  type Coach,
-  type InsertCoach,
-  type CoachAssignment,
-  type InsertCoachAssignment,
-  type Transaction,
-  type InsertTransaction,
-  type SetupProgress,
-  type InsertSetupProgress
+  settings, channels, teams, players, coaches, coachAssignments, transactions, setupProgress,
+  type Settings, type Channels, type Team, type Player, type Coach, type CoachAssignment, type Transaction, type SetupProgress,
+  type InsertSettings, type InsertChannels, type InsertTeam, type InsertPlayer, type InsertCoach, 
+  type InsertCoachAssignment, type InsertTransaction, type InsertSetupProgress
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // Settings
@@ -84,349 +66,261 @@ export interface IStorage {
   updateSetupProgress(serverId: string, progress: Partial<InsertSetupProgress>): Promise<SetupProgress | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private settingsMap: Map<string, Settings>;
-  private channelsMap: Map<string, Channels>;
-  private teamsMap: Map<number, Team>;
-  private playersMap: Map<number, Player>;
-  private coachesMap: Map<number, Coach>;
-  private coachAssignmentsMap: Map<number, CoachAssignment>;
-  private transactionsMap: Map<number, Transaction>;
-  private setupProgressMap: Map<string, SetupProgress>;
-  
-  private nextIds: {
-    settings: number;
-    channels: number;
-    teams: number;
-    players: number;
-    coaches: number;
-    coachAssignments: number;
-    transactions: number;
-    setupProgress: number;
-  };
-  
-  constructor() {
-    this.settingsMap = new Map();
-    this.channelsMap = new Map();
-    this.teamsMap = new Map();
-    this.playersMap = new Map();
-    this.coachesMap = new Map();
-    this.coachAssignmentsMap = new Map();
-    this.transactionsMap = new Map();
-    this.setupProgressMap = new Map();
-    
-    this.nextIds = {
-      settings: 1,
-      channels: 1,
-      teams: 1,
-      players: 1,
-      coaches: 1,
-      coachAssignments: 1,
-      transactions: 1,
-      setupProgress: 1
-    };
-  }
-  
+export class DatabaseStorage implements IStorage {
   // Settings
   async getSettings(serverId: string): Promise<Settings | undefined> {
-    return Array.from(this.settingsMap.values()).find(s => s.serverId === serverId);
+    const result = await db.select().from(settings).where(eq(settings.serverId, serverId));
+    return result[0];
   }
-  
-  async createSettings(settings: InsertSettings): Promise<Settings> {
-    const id = this.nextIds.settings++;
-    const now = new Date();
-    const newSettings: Settings = {
-      ...settings,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.settingsMap.set(id, newSettings);
-    return newSettings;
+
+  async createSettings(setting: InsertSettings): Promise<Settings> {
+    const result = await db.insert(settings).values(setting).returning();
+    return result[0];
   }
-  
-  async updateSettings(serverId: string, settingsUpdate: Partial<InsertSettings>): Promise<Settings | undefined> {
-    const settings = await this.getSettings(serverId);
-    if (!settings) return undefined;
-    
-    const updatedSettings: Settings = {
-      ...settings,
-      ...settingsUpdate,
-      updatedAt: new Date()
-    };
-    this.settingsMap.set(settings.id, updatedSettings);
-    return updatedSettings;
+
+  async updateSettings(serverId: string, setting: Partial<InsertSettings>): Promise<Settings | undefined> {
+    const result = await db.update(settings)
+      .set(setting)
+      .where(eq(settings.serverId, serverId))
+      .returning();
+    return result[0];
   }
-  
+
   // Channels
   async getChannels(serverId: string): Promise<Channels | undefined> {
-    return Array.from(this.channelsMap.values()).find(c => c.serverId === serverId);
+    const result = await db.select().from(channels).where(eq(channels.serverId, serverId));
+    return result[0];
   }
-  
-  async createChannels(channels: InsertChannels): Promise<Channels> {
-    const id = this.nextIds.channels++;
-    const newChannels: Channels = {
-      ...channels,
-      id
-    };
-    this.channelsMap.set(id, newChannels);
-    return newChannels;
+
+  async createChannels(channel: InsertChannels): Promise<Channels> {
+    const result = await db.insert(channels).values(channel).returning();
+    return result[0];
   }
-  
-  async updateChannels(serverId: string, channelsUpdate: Partial<InsertChannels>): Promise<Channels | undefined> {
-    const channels = await this.getChannels(serverId);
-    if (!channels) return undefined;
-    
-    const updatedChannels: Channels = {
-      ...channels,
-      ...channelsUpdate
-    };
-    this.channelsMap.set(channels.id, updatedChannels);
-    return updatedChannels;
+
+  async updateChannels(serverId: string, channel: Partial<InsertChannels>): Promise<Channels | undefined> {
+    const result = await db.update(channels)
+      .set(channel)
+      .where(eq(channels.serverId, serverId))
+      .returning();
+    return result[0];
   }
-  
+
   // Teams
   async getTeam(id: number): Promise<Team | undefined> {
-    return this.teamsMap.get(id);
+    const result = await db.select().from(teams).where(eq(teams.id, id));
+    return result[0];
   }
-  
+
   async getTeamByRoleId(serverId: string, roleId: string): Promise<Team | undefined> {
-    return Array.from(this.teamsMap.values()).find(t => t.serverId === serverId && t.roleId === roleId);
+    const result = await db.select().from(teams)
+      .where(and(
+        eq(teams.serverId, serverId),
+        eq(teams.roleId, roleId)
+      ));
+    return result[0];
   }
-  
+
   async getTeamByEmoji(serverId: string, emoji: string): Promise<Team | undefined> {
-    return Array.from(this.teamsMap.values()).find(t => t.serverId === serverId && t.emoji === emoji);
+    const result = await db.select().from(teams)
+      .where(and(
+        eq(teams.serverId, serverId),
+        eq(teams.emoji, emoji)
+      ));
+    return result[0];
   }
-  
+
   async getTeams(serverId: string): Promise<Team[]> {
-    return Array.from(this.teamsMap.values()).filter(t => t.serverId === serverId);
+    return await db.select().from(teams).where(eq(teams.serverId, serverId));
   }
-  
+
   async createTeam(team: InsertTeam): Promise<Team> {
-    const id = this.nextIds.teams++;
-    const now = new Date();
-    const newTeam: Team = {
-      ...team,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.teamsMap.set(id, newTeam);
-    return newTeam;
+    const result = await db.insert(teams).values(team).returning();
+    return result[0];
   }
-  
-  async updateTeam(id: number, teamUpdate: Partial<InsertTeam>): Promise<Team | undefined> {
-    const team = await this.getTeam(id);
-    if (!team) return undefined;
-    
-    const updatedTeam: Team = {
-      ...team,
-      ...teamUpdate,
-      updatedAt: new Date()
-    };
-    this.teamsMap.set(id, updatedTeam);
-    return updatedTeam;
+
+  async updateTeam(id: number, team: Partial<InsertTeam>): Promise<Team | undefined> {
+    const result = await db.update(teams)
+      .set(team)
+      .where(eq(teams.id, id))
+      .returning();
+    return result[0];
   }
-  
+
   async deleteTeam(id: number): Promise<void> {
-    this.teamsMap.delete(id);
+    await db.delete(teams).where(eq(teams.id, id));
   }
-  
+
   // Players
   async getPlayer(id: number): Promise<Player | undefined> {
-    return this.playersMap.get(id);
+    const result = await db.select().from(players).where(eq(players.id, id));
+    return result[0];
   }
-  
+
   async getPlayerByUserId(serverId: string, userId: string): Promise<Player | undefined> {
-    return Array.from(this.playersMap.values()).find(p => p.serverId === serverId && p.userId === userId);
+    const result = await db.select().from(players)
+      .where(and(
+        eq(players.serverId, serverId),
+        eq(players.userId, userId)
+      ));
+    return result[0];
   }
-  
+
   async getPlayersByTeam(teamId: number): Promise<Player[]> {
-    return Array.from(this.playersMap.values()).filter(p => p.teamId === teamId);
+    return await db.select().from(players).where(eq(players.teamId, teamId));
   }
-  
+
   async createPlayer(player: InsertPlayer): Promise<Player> {
-    const id = this.nextIds.players++;
-    const now = new Date();
-    const newPlayer: Player = {
-      ...player,
-      id,
-      joinedAt: now
-    };
-    this.playersMap.set(id, newPlayer);
-    return newPlayer;
+    const result = await db.insert(players).values(player).returning();
+    return result[0];
   }
-  
-  async updatePlayer(id: number, playerUpdate: Partial<InsertPlayer>): Promise<Player | undefined> {
-    const player = await this.getPlayer(id);
-    if (!player) return undefined;
-    
-    const updatedPlayer: Player = {
-      ...player,
-      ...playerUpdate
-    };
-    this.playersMap.set(id, updatedPlayer);
-    return updatedPlayer;
+
+  async updatePlayer(id: number, player: Partial<InsertPlayer>): Promise<Player | undefined> {
+    const result = await db.update(players)
+      .set(player)
+      .where(eq(players.id, id))
+      .returning();
+    return result[0];
   }
-  
+
   async deletePlayer(id: number): Promise<void> {
-    this.playersMap.delete(id);
+    await db.delete(players).where(eq(players.id, id));
   }
-  
+
   // Coaches
   async getCoach(id: number): Promise<Coach | undefined> {
-    return this.coachesMap.get(id);
+    const result = await db.select().from(coaches).where(eq(coaches.id, id));
+    return result[0];
   }
-  
+
   async getCoachByRoleId(serverId: string, roleId: string): Promise<Coach | undefined> {
-    return Array.from(this.coachesMap.values()).find(c => c.serverId === serverId && c.roleId === roleId);
+    const result = await db.select().from(coaches)
+      .where(and(
+        eq(coaches.serverId, serverId),
+        eq(coaches.roleId, roleId)
+      ));
+    return result[0];
   }
-  
+
   async getCoachByShortCode(serverId: string, shortCode: string): Promise<Coach | undefined> {
-    return Array.from(this.coachesMap.values()).find(c => c.serverId === serverId && c.shortCode === shortCode);
+    const result = await db.select().from(coaches)
+      .where(and(
+        eq(coaches.serverId, serverId),
+        eq(coaches.shortCode, shortCode)
+      ));
+    return result[0];
   }
-  
+
   async getCoaches(serverId: string): Promise<Coach[]> {
-    return Array.from(this.coachesMap.values()).filter(c => c.serverId === serverId);
+    return await db.select().from(coaches).where(eq(coaches.serverId, serverId));
   }
-  
+
   async createCoach(coach: InsertCoach): Promise<Coach> {
-    const id = this.nextIds.coaches++;
-    const now = new Date();
-    const newCoach: Coach = {
-      ...coach,
-      id,
-      createdAt: now
-    };
-    this.coachesMap.set(id, newCoach);
-    return newCoach;
+    const result = await db.insert(coaches).values(coach).returning();
+    return result[0];
   }
-  
-  async updateCoach(id: number, coachUpdate: Partial<InsertCoach>): Promise<Coach | undefined> {
-    const coach = await this.getCoach(id);
-    if (!coach) return undefined;
-    
-    const updatedCoach: Coach = {
-      ...coach,
-      ...coachUpdate
-    };
-    this.coachesMap.set(id, updatedCoach);
-    return updatedCoach;
+
+  async updateCoach(id: number, coach: Partial<InsertCoach>): Promise<Coach | undefined> {
+    const result = await db.update(coaches)
+      .set(coach)
+      .where(eq(coaches.id, id))
+      .returning();
+    return result[0];
   }
-  
+
   async deleteCoach(id: number): Promise<void> {
-    this.coachesMap.delete(id);
+    await db.delete(coaches).where(eq(coaches.id, id));
   }
-  
+
   // Coach Assignments
   async getCoachAssignment(id: number): Promise<CoachAssignment | undefined> {
-    return this.coachAssignmentsMap.get(id);
+    const result = await db.select().from(coachAssignments).where(eq(coachAssignments.id, id));
+    return result[0];
   }
-  
+
   async getCoachAssignmentsByTeam(teamId: number): Promise<CoachAssignment[]> {
-    return Array.from(this.coachAssignmentsMap.values()).filter(ca => ca.teamId === teamId);
+    return await db.select().from(coachAssignments).where(eq(coachAssignments.teamId, teamId));
   }
-  
+
   async getCoachAssignmentsByCoach(coachId: number): Promise<CoachAssignment[]> {
-    return Array.from(this.coachAssignmentsMap.values()).filter(ca => ca.coachId === coachId);
+    return await db.select().from(coachAssignments).where(eq(coachAssignments.coachId, coachId));
   }
-  
+
   async getCoachAssignmentsByUser(serverId: string, userId: string): Promise<CoachAssignment[]> {
-    return Array.from(this.coachAssignmentsMap.values()).filter(ca => ca.serverId === serverId && ca.userId === userId);
+    return await db.select().from(coachAssignments)
+      .where(and(
+        eq(coachAssignments.serverId, serverId),
+        eq(coachAssignments.userId, userId)
+      ));
   }
-  
+
   async createCoachAssignment(assignment: InsertCoachAssignment): Promise<CoachAssignment> {
-    const id = this.nextIds.coachAssignments++;
-    const now = new Date();
-    const newAssignment: CoachAssignment = {
-      ...assignment,
-      id,
-      assignedAt: now
-    };
-    this.coachAssignmentsMap.set(id, newAssignment);
-    return newAssignment;
+    const result = await db.insert(coachAssignments).values(assignment).returning();
+    return result[0];
   }
-  
+
   async deleteCoachAssignment(id: number): Promise<void> {
-    this.coachAssignmentsMap.delete(id);
+    await db.delete(coachAssignments).where(eq(coachAssignments.id, id));
   }
-  
+
   // Transactions
   async getTransaction(id: number): Promise<Transaction | undefined> {
-    return this.transactionsMap.get(id);
+    const result = await db.select().from(transactions).where(eq(transactions.id, id));
+    return result[0];
   }
-  
+
   async getTransactions(serverId: string): Promise<Transaction[]> {
-    return Array.from(this.transactionsMap.values()).filter(t => t.serverId === serverId);
+    return await db.select().from(transactions).where(eq(transactions.serverId, serverId));
   }
-  
+
   async getTransactionsByTeam(teamId: number): Promise<Transaction[]> {
-    return Array.from(this.transactionsMap.values()).filter(t => 
-      t.sourceTeamId === teamId || t.targetTeamId === teamId
-    );
+    return await db.select().from(transactions)
+      .where(
+        and(
+          eq(transactions.sourceTeamId, teamId),
+          eq(transactions.targetTeamId, teamId)
+        )
+      );
   }
-  
+
   async getPendingTransactions(serverId: string): Promise<Transaction[]> {
-    return Array.from(this.transactionsMap.values()).filter(t => 
-      t.serverId === serverId && t.status === "pending"
-    );
+    return await db.select().from(transactions)
+      .where(and(
+        eq(transactions.serverId, serverId),
+        eq(transactions.status, 'pending')
+      ));
   }
-  
+
   async createTransaction(transaction: InsertTransaction): Promise<Transaction> {
-    const id = this.nextIds.transactions++;
-    const now = new Date();
-    const newTransaction: Transaction = {
-      ...transaction,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.transactionsMap.set(id, newTransaction);
-    return newTransaction;
+    const result = await db.insert(transactions).values(transaction).returning();
+    return result[0];
   }
-  
-  async updateTransaction(id: number, transactionUpdate: Partial<InsertTransaction>): Promise<Transaction | undefined> {
-    const transaction = await this.getTransaction(id);
-    if (!transaction) return undefined;
-    
-    const updatedTransaction: Transaction = {
-      ...transaction,
-      ...transactionUpdate,
-      updatedAt: new Date()
-    };
-    this.transactionsMap.set(id, updatedTransaction);
-    return updatedTransaction;
+
+  async updateTransaction(id: number, transaction: Partial<InsertTransaction>): Promise<Transaction | undefined> {
+    const result = await db.update(transactions)
+      .set(transaction)
+      .where(eq(transactions.id, id))
+      .returning();
+    return result[0];
   }
-  
+
   // Setup Progress
   async getSetupProgress(serverId: string): Promise<SetupProgress | undefined> {
-    return Array.from(this.setupProgressMap.values()).find(sp => sp.serverId === serverId);
+    const result = await db.select().from(setupProgress).where(eq(setupProgress.serverId, serverId));
+    return result[0];
   }
-  
+
   async createSetupProgress(progress: InsertSetupProgress): Promise<SetupProgress> {
-    const id = this.nextIds.setupProgress++;
-    const now = new Date();
-    const newProgress: SetupProgress = {
-      ...progress,
-      id,
-      lastUpdated: now
-    };
-    this.setupProgressMap.set(id, newProgress);
-    return newProgress;
+    const result = await db.insert(setupProgress).values(progress).returning();
+    return result[0];
   }
-  
-  async updateSetupProgress(serverId: string, progressUpdate: Partial<InsertSetupProgress>): Promise<SetupProgress | undefined> {
-    const progress = await this.getSetupProgress(serverId);
-    if (!progress) return undefined;
-    
-    const updatedProgress: SetupProgress = {
-      ...progress,
-      ...progressUpdate,
-      lastUpdated: new Date()
-    };
-    this.setupProgressMap.set(progress.id, updatedProgress);
-    return updatedProgress;
+
+  async updateSetupProgress(serverId: string, progress: Partial<InsertSetupProgress>): Promise<SetupProgress | undefined> {
+    const result = await db.update(setupProgress)
+      .set(progress)
+      .where(eq(setupProgress.serverId, serverId))
+      .returning();
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
