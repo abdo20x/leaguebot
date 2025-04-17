@@ -72,7 +72,7 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
       .setColor('#3498db')
       .setTitle('Win Lock Community Roster Counts')
       .setThumbnail(guild.iconURL() || '')
-      .setFooter({ text: `Today at ${new Date().toLocaleTimeString()}` });
+      .setFooter({ text: `Today at ${new Date().toLocaleTimeString('en-US', { timeZone: 'UTC', hour12: true })} UTC` });
 
     // Add each team to the description
     let description = '';
