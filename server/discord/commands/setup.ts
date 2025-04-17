@@ -1038,7 +1038,7 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
       });
       return;
     }
-    
+
     // Create select menu with coach options
     const coachOptions = coaches.map(coach => {
       return new StringSelectMenuOptionBuilder()
@@ -1050,29 +1050,20 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
     const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(
         new StringSelectMenuBuilder()
-          .setCustomId('remove_coach_select')
+          .setCustomId('setup_remove_coach_select')
           .setPlaceholder('Select coach to remove')
           .addOptions(coachOptions)
       );
 
-    // Add confirmation button
-    const confirmButton = new ActionRowBuilder<ButtonBuilder>()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('confirm_remove_coach')
-          .setLabel('Confirm Remove')
-          .setStyle(ButtonStyle.Danger)
-      );
-    
     if (interaction.deferred) {
       await interaction.editReply({
         content: 'Select a coach to remove:',
-        components: [selectMenu, confirmButton]
+        components: [selectMenu]
       });
     } else {
       await interaction.reply({
         content: 'Select a coach to remove:',
-        components: [selectMenu, confirmButton],
+        components: [selectMenu],
         ephemeral: true
       });
     }
@@ -1085,11 +1076,44 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
 // Detect coaches handler
 // Handler functions for all setup buttons
 async function handleTransferWindow(interaction: ButtonInteraction) {
-  await interaction.reply({ content: 'Configuring transfer window settings...', ephemeral: true });
+  const modal = new ModalBuilder()
+    .setCustomId('transfer_window_modal')
+    .setTitle('Transfer Window Settings')
+    .addComponents(
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId('window_duration')
+          .setLabel('Window Duration (in days)')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+      )
+    );
+
+  await interaction.showModal(modal);
 }
 
 async function handleWageStructure(interaction: ButtonInteraction) {
-  await interaction.reply({ content: 'Configuring wage structure...', ephemeral: true });
+  const modal = new ModalBuilder()
+    .setCustomId('wage_structure_modal')
+    .setTitle('Wage Structure Settings')
+    .addComponents(
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId('min_wage')
+          .setLabel('Minimum Wage')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+      ),
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        new TextInputBuilder()
+          .setCustomId('max_wage')
+          .setLabel('Maximum Wage')
+          .setStyle(TextInputStyle.Short)
+          .setRequired(true)
+      )
+    );
+
+  await interaction.showModal(modal);
 }
 
 async function handleContractRules(interaction: ButtonInteraction) {
