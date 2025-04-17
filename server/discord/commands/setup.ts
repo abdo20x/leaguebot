@@ -76,6 +76,18 @@ export const setupCommand = {
     else if (customId === 'setup_detect_coaches') {
       await handleDetectCoaches(interaction);
     }
+    else if (customId === 'confirm_remove_coach') {
+      const selectedCoach = interaction.message.components[0].components[0].customId;
+      if (selectedCoach) {
+        await storage.deleteCoach(interaction.guildId!, parseInt(selectedCoach));
+        await interaction.reply({ 
+          content: 'Coach removed successfully!',
+          ephemeral: true 
+        });
+        // Refresh the coaches page
+        await showSetupPage(interaction, 3);
+      }
+    }
     // Add other button handlers as needed for the setup flow
   },
   
@@ -948,18 +960,20 @@ async function handleAssignCoach(interaction: ButtonInteraction | StringSelectMe
 
 // Remove coach handler
 async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMenuInteraction): Promise<void> {
-  const serverId = interaction.guildId;
-  if (!serverId) {
-    await interaction.reply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.', ephemeral: true });
-    return;
-  }
-  
   try {
+    const serverId = interaction.guildId;
+    if (!serverId) {
+      throw new Error('Server ID not found');
+    }
+
     // Get all coaches for this server
     const coaches = await storage.getCoaches(serverId);
     
     if (coaches.length === 0) {
-      await interaction.reply({ content: 'لا توجد أدوار مدربين لحذفها.', ephemeral: true });
+      await interaction.reply({ 
+        content: 'No coaches found to remove.',
+        ephemeral: true 
+      });
       return;
     }
     
@@ -978,12 +992,28 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
           .setPlaceholder('Select coach to remove')
           .addOptions(coachOptions)
       );
+
+    // Add confirmation button
+    const confirmButton = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('confirm_remove_coach')
+          .setLabel('Confirm Remove')
+          .setStyle(ButtonStyle.Danger)
+      );
     
-    await interaction.reply({
-      content: 'اختر المدرب الذي تريد حذفه:',
-      components: [selectMenu],
-      ephemeral: true
-    });
+    if (interaction.deferred) {
+      await interaction.editReply({
+        content: 'Select a coach to remove:',
+        components: [selectMenu, confirmButton]
+      });
+    } else {
+      await interaction.reply({
+        content: 'Select a coach to remove:',
+        components: [selectMenu, confirmButton],
+        ephemeral: true
+      });
+    }
   } catch (error) {
     console.error('Error handling remove coach:', error);
     await interaction.reply({ content: 'حدث خطأ أثناء تحميل المدربين. الرجاء المحاولة مرة أخرى.', ephemeral: true });
