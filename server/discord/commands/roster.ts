@@ -12,7 +12,7 @@ const rosterCommand = {
   data: new SlashCommandBuilder()
     .setName('roster')
     .setDescription('View roster counts for all teams'),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleRosterCommand(interaction);
   }
@@ -23,7 +23,7 @@ const rosterArabicCommand = {
   data: new SlashCommandBuilder()
     .setName('روستر')
     .setDescription('عرض قوائم اللاعبين لجميع الفرق'),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleRosterCommand(interaction);
   }
@@ -32,22 +32,22 @@ const rosterArabicCommand = {
 // Handle roster command
 async function handleRosterCommand(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
-  
+
   const serverId = interaction.guildId;
   if (!serverId) {
     await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
-  
+
   try {
     // Get all teams
     const teams = await storage.getTeams(serverId);
-    
+
     if (teams.length === 0) {
       await interaction.editReply({ content: 'لا توجد فرق مسجلة في هذا السيرفر.' });
       return;
     }
-    
+
     // Get guild for role counting
     const guild = interaction.guild;
     if (!guild) {
@@ -64,46 +64,47 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
       const count = role ? role.members.size : 0;
       return { ...team, rosterCount: count };
     }));
-    
+
     teamsWithCounts.sort((a, b) => (b.rosterCount || 0) - (a.rosterCount || 0));
-    
+
     // Create embed
     const embed = new EmbedBuilder()
       .setColor('#3498db')
       .setTitle('Win Lock Community Roster Counts')
       .setThumbnail(guild.iconURL() || '')
       .setFooter({ text: `Today at ${new Date().toLocaleTimeString()}` });
-    
+
     // Add each team to the description
     let description = '';
-    
-    for (const team of teamsWithCounts) {
+
+    // Sort teams by roster count in descending order
+    teamsWithCounts.sort((a, b) => (b.rosterCount || 0) - (a.rosterCount || 0));
+
+    // Add active teams first
+    for (const team of teamsWithCounts.filter(t => (t.rosterCount || 0) > 0)) {
       const rosterCount = team.rosterCount || 0;
       const rosterMax = team.rosterMax || 30;
-      const { color, percentage } = getRosterPercentage(rosterCount, rosterMax);
-      
-      // Create a colored circle based on percentage
-      let colorCircle = '🟢'; // Green for good
-      if (percentage < 30) {
-        colorCircle = '🟠'; // Orange for low
-      } else if (percentage > 80) {
-        colorCircle = '🔴'; // Red for nearly full
+
+      // Create a colored circle based on count
+      let colorCircle = '🟢'; // Green for most teams
+      if (rosterCount < 10) {
+        colorCircle = '🟡'; // Yellow for low count
       }
-      
-      description += `${colorCircle} ${rosterCount}/${rosterMax} - ${team.emoji} ${team.name}\\n`;
+
+      description += `${colorCircle} ${rosterCount}/${rosterMax} - ${team.name} ${team.emoji}\n`;
     }
-    
-    // Check if there are teams with no players
-    const emptyTeams = teams.filter(team => (team.rosterCount || 0) === 0);
+
+    // Add empty teams section if any exist
+    const emptyTeams = teamsWithCounts.filter(t => (t.rosterCount || 0) === 0);
     if (emptyTeams.length > 0) {
-      description += '\\nEmpty Teams\\n';
+      description += '\nEmpty Teams\n';
       for (const team of emptyTeams) {
-        description += `${team.emoji} ${team.name}\\n`;
+        description += `${team.emoji} ${team.name}\n`;
       }
     }
-    
+
     embed.setDescription(description);
-    
+
     await interaction.editReply({ embeds: [embed] });
   } catch (error) {
     console.error('Error handling roster command:', error);
