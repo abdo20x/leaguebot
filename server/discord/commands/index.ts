@@ -1,17 +1,29 @@
 // Command registration and handling
-import { Client, Collection, REST, Routes, SlashCommandBuilder, ChatInputCommandInteraction } from "discord.js";
+import { 
+  Client, 
+  Collection, 
+  REST, 
+  Routes, 
+  SlashCommandBuilder, 
+  ChatInputCommandInteraction,
+  SlashCommandSubcommandsOnlyBuilder,
+  SlashCommandOptionsOnlyBuilder
+} from "discord.js";
 import { setupCommand } from "./setup";
 import { teamsCommands } from "./teams";
 import { rosterCommands } from "./roster";
 import { coachCommands } from "./coach";
 import { transferCommands } from "./transfer";
 import { currencyCommands } from "./currency";
+import { freeAgentCommands } from "./freeAgent";
+import { demandCommands } from "./demand";
+import { transferOfferCommands } from "./transferOffer";
 import { canUseCommand } from "../permissions";
 import { getTranslation, detectLanguage } from "../translations";
 
 // Command interface
 export interface Command {
-  data: SlashCommandBuilder;
+  data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandOptionsOnlyBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
   permissionCheck?: (interaction: ChatInputCommandInteraction) => Promise<boolean>;
 }
@@ -45,6 +57,21 @@ export function registerCommands(client: Client, token: string): Collection<stri
   
   // Add currency commands
   currencyCommands.forEach(cmd => {
+    commands.set(cmd.data.name, cmd);
+  });
+  
+  // Add free agent commands
+  freeAgentCommands.forEach(cmd => {
+    commands.set(cmd.data.name, cmd);
+  });
+  
+  // Add demand commands
+  demandCommands.forEach(cmd => {
+    commands.set(cmd.data.name, cmd);
+  });
+  
+  // Add transfer offer commands
+  transferOfferCommands.forEach(cmd => {
     commands.set(cmd.data.name, cmd);
   });
   

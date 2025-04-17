@@ -107,15 +107,16 @@ async function handleSignRequest(interaction: ChatInputCommandInteraction): Prom
       .setFooter({ text: 'Win Lock Bot • نظام الانتقالات' });
     
     // Create select menu with available teams
-    const options: StringSelectMenuOptionBuilder[] = teams.map(team => {
-      const isFull = (team.rosterCount || 0) >= (team.rosterMax || 30);
-      return new StringSelectMenuOptionBuilder()
+    // Filter out full teams
+    const availableTeams = teams.filter(team => (team.rosterCount || 0) < (team.rosterMax || 30));
+    
+    const options: StringSelectMenuOptionBuilder[] = availableTeams.map(team => 
+      new StringSelectMenuOptionBuilder()
         .setLabel(`${team.name}`)
         .setValue(`${team.id}`)
         .setEmoji(team.emoji)
-        .setDescription(`Roster: ${team.rosterCount || 0}/${team.rosterMax || 30}${isFull ? ' - مكتمل' : ''}`)
-        .setDisabled(isFull);
-    });
+        .setDescription(`Roster: ${team.rosterCount || 0}/${team.rosterMax || 30}`)
+    );
     
     const row = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(

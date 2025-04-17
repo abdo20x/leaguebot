@@ -28,6 +28,7 @@ export const channels = pgTable("channels", {
   settingChanges: text("setting_changes").default(""),
   streams: text("streams").default(""),
   transactions: text("transactions").default(""),
+  applications: text("applications").default(""),
 });
 
 // Teams
