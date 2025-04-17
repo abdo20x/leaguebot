@@ -137,10 +137,10 @@ export function createTeamDetailsEmbed(
 ): EmbedBuilder {
   const embed = createBaseEmbed()
     .setTitle(`${team.name} Details`)
-    .setDescription(`${team.emoji} Balance: ${formatCurrency(team.balance || 0)}`)
+    .setDescription(`${team.emoji} Balance: ${formatCurrency(team.currency || 0)}`)
     .addFields(
       { name: 'Roster', value: `${team.rosterCount || 0}/${team.rosterMax || 30} players` },
-      { name: 'Status', value: team.active ? 'Active' : 'Inactive' }
+      { name: 'Status', value: team.currency !== null ? 'Active' : 'Inactive' }
     );
   
   // Add players if available

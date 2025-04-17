@@ -68,7 +68,8 @@ async function handleSetupCommand(interaction: ChatInputCommandInteraction): Pro
   try {
     // Check if user has administrator permissions
     const member = interaction.member;
-    if (!member || !('permissions' in member) || !member.permissions.has('Administrator')) {
+    if (!member || !('permissions' in member) || 
+        (typeof member.permissions !== 'string' && !member.permissions.has('Administrator'))) {
       await interaction.editReply({ content: 'يجب أن تكون مسؤولاً لاستخدام هذا الأمر.' });
       return;
     }
