@@ -19,7 +19,7 @@ export default function Navbar() {
                 <span className="font-bold">Win Lock</span>
               </a>
             </Link>
-            
+
             <nav className="hidden md:flex gap-6">
               <Link href="/">
                 <a className={location === "/" ? "font-medium" : "text-muted-foreground"}>
@@ -46,7 +46,7 @@ export default function Navbar() {
               </a>
             </nav>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <Button 
               variant="outline" 

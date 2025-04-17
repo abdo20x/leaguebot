@@ -315,7 +315,31 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
         additionalRows.push(detectCoachesRow);
         break;
         
-      // Add more pages as needed
+      case 4:
+        // League Staff setup
+        setupEmbed = new EmbedBuilder()
+          .setTitle('League Staff Setup')
+          .setDescription('Configure staff roles and permissions for your league')
+          .addFields([
+            { name: 'League Operator', value: 'Full control over league settings and operations', inline: true },
+            { name: 'League Manager', value: 'Can manage teams and players', inline: true },
+            { name: 'Referee', value: 'Can manage matches and record results', inline: true }
+          ]);
+        break;
+        
+      case 5:
+        // Transaction Settings
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Transaction Settings')
+          .setDescription('Configure currency and trade settings for your league')
+          .addFields([
+            { name: 'Default Currency', value: '50,000,000', inline: true },
+            { name: 'Win Bonus', value: '10,000,000', inline: true },
+            { name: 'Loss Compensation', value: '5,000,000', inline: true },
+            { name: 'Transfer Fee', value: '10% of player value', inline: true }
+          ]);
+        break;
+        
       default:
         // Default to main page
         setupEmbed = createSetupEmbed('Win Lock Community Setup', 'Page not found', 'The requested page does not exist.');
