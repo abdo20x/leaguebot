@@ -165,32 +165,105 @@ export function createTransactionEmbed(
     description: string,
     sourceTeam?: Team,
     targetTeam?: Team,
-    player?: Player
+    player?: Player,
+    coach?: string
 ): EmbedBuilder {
   const embed = createBaseEmbed()
-    .setTitle(`${sourceTeam?.emoji || ''} ${sourceTeam?.name || ''} Transaction`);
+    .setColor('#ff3e3e');
   
-  // Format the description based on transaction type
-  let formattedDesc = '';
-  if (transactionType === 'transfer' && sourceTeam && targetTeam && player) {
-    formattedDesc = `The ${sourceTeam.emoji} ${sourceTeam.name} have **${description}** <@${player.userId}>`;
-    if (targetTeam) {
-      formattedDesc += ` to ${targetTeam.emoji} ${targetTeam.name}`;
+  // Format the embed based on the screenshot example
+  if (transactionType === 'sign' && sourceTeam && player) {
+    // PL > Team Name Transaction format
+    embed.setTitle(`${sourceTeam.emoji} ${sourceTeam.name} Transaction`);
+    
+    // The TeamEmoji TeamName have signed @PlayerTag
+    embed.setDescription(`The ${sourceTeam.emoji} ${sourceTeam.name} have **${description}** <@${player.userId}>`);
+    
+    // Coach and Roster info
+    if (coach) {
+      embed.addFields({ name: 'Coach:', value: coach });
     }
-  } else {
-    formattedDesc = description;
+    
+    embed.addFields({ 
+      name: 'Roster:', 
+      value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` 
+    });
   }
-  
-  embed.setDescription(formattedDesc);
-  
-  // Add coach information if available
-  if (player) {
-    embed.addFields({ name: 'Player', value: `<@${player.userId}>` });
+  else if (transactionType === 'release' && sourceTeam && player) {
+    // PL > Team Name Transaction format
+    embed.setTitle(`${sourceTeam.emoji} ${sourceTeam.name} Transaction`);
+    
+    // The TeamEmoji TeamName have released @PlayerTag
+    embed.setDescription(`The ${sourceTeam.emoji} ${sourceTeam.name} have **${description}** <@${player.userId}>`);
+    
+    // Coach and Roster info
+    if (coach) {
+      embed.addFields({ name: 'Coach:', value: coach });
+    }
+    
+    embed.addFields({ 
+      name: 'Roster:', 
+      value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` 
+    });
   }
-  
-  // Add roster count
-  if (sourceTeam) {
-    embed.addFields({ name: 'Roster', value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` });
+  else if (transactionType === 'transfer' && sourceTeam && targetTeam && player) {
+    // Team Transaction format
+    embed.setTitle(`${sourceTeam.emoji} ${sourceTeam.name} Transaction`);
+    
+    // The TeamEmoji TeamName have transferred @PlayerTag to TargetTeamEmoji TargetTeamName
+    embed.setDescription(`The ${sourceTeam.emoji} ${sourceTeam.name} have **${description}** <@${player.userId}> to ${targetTeam.emoji} ${targetTeam.name}`);
+    
+    // Amount if it's a paid transfer
+    if (amount > 0) {
+      embed.addFields({ name: 'Amount:', value: formatCurrency(amount) });
+    }
+    
+    // Coach and Roster info
+    if (coach) {
+      embed.addFields({ name: 'Coach:', value: coach });
+    }
+    
+    embed.addFields({ 
+      name: 'Roster:', 
+      value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` 
+    });
+  }
+  else if (transactionType === 'offer') {
+    // Offer format
+    embed.setTitle(`${sourceTeam?.emoji || ''} Transfer Offer`);
+    embed.setDescription(description);
+    
+    if (amount > 0) {
+      embed.addFields({ name: 'Amount:', value: formatCurrency(amount) });
+    }
+    
+    if (player) {
+      embed.addFields({ name: 'Player:', value: `<@${player.userId}>` });
+    }
+    
+    if (coach) {
+      embed.addFields({ name: 'From Coach:', value: coach });
+    }
+  }
+  else {
+    // Default format for other transaction types
+    embed.setTitle(`${sourceTeam?.emoji || ''} ${sourceTeam?.name || ''} Transaction`);
+    embed.setDescription(description);
+    
+    if (amount > 0) {
+      embed.addFields({ name: 'Amount:', value: formatCurrency(amount) });
+    }
+    
+    if (player) {
+      embed.addFields({ name: 'Player:', value: `<@${player.userId}>` });
+    }
+    
+    if (sourceTeam) {
+      embed.addFields({ 
+        name: 'Roster:', 
+        value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` 
+      });
+    }
   }
   
   return embed;

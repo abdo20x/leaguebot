@@ -2,6 +2,10 @@ import { Client, Collection, SlashCommandBuilder, ChatInputCommandInteraction, R
 import { setupCommands } from './setup';
 import { rosterCommands } from './roster';
 import { playerManagementCommands } from './playerManagement';
+import { offerCommands } from './offers';
+import { currencyCommands } from './currency';
+import { teamsCommands } from './teams';
+import { coachesCommands } from './coaches';
 
 // Create commands collection
 const commands = new Collection<string, any>();
@@ -12,6 +16,10 @@ export function registerCommands(client: Client, token: string) {
     ...setupCommands, 
     ...rosterCommands,
     ...playerManagementCommands,
+    ...offerCommands,
+    ...currencyCommands,
+    ...teamsCommands,
+    ...coachesCommands,
     // Add more commands here
   ];
   
@@ -23,13 +31,14 @@ export function registerCommands(client: Client, token: string) {
   // Register slash commands with Discord
   const rest = new REST().setToken(token);
   
-  (async () => {
+  // We need to wait for the client to be ready before registering commands
+  client.once('ready', async () => {
     try {
       console.log(`Started refreshing ${commandsArray.length} application (/) commands.`);
       
       // The put method is used to fully refresh all commands
       await rest.put(
-        Routes.applicationCommands(client.user?.id || ''),
+        Routes.applicationCommands(client.user.id),
         { body: commandsArray.map(command => command.data.toJSON()) },
       );
       
@@ -37,7 +46,7 @@ export function registerCommands(client: Client, token: string) {
     } catch (error) {
       console.error(error);
     }
-  })();
+  });
   
   return commands;
 }

@@ -1,761 +1,317 @@
-// Currency management commands
 import { 
   SlashCommandBuilder, 
-  ChatInputCommandInteraction
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  PermissionFlagsBits
 } from "discord.js";
 import { storage } from "../../storage";
-import { createBaseEmbed } from "../embeds";
-import { detectLanguage, getTranslation } from "../translations";
+import { createTransactionEmbed } from "../embeds";
 import { formatCurrency } from "../utils";
 
-// Currency command
-const currencyCommand = {
+// Grant money to a team (win) - only for admin
+const winCommand = {
   data: new SlashCommandBuilder()
-    .setName('currency')
-    .setDescription('Manage team currency')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('award')
-        .setDescription('Award currency to a team')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The team to award currency to')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('amount')
-            .setDescription('The amount to award')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('reason')
-            .setDescription('Reason for awarding currency (optional)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('deduct')
-        .setDescription('Deduct currency from a team')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The team to deduct currency from')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('amount')
-            .setDescription('The amount to deduct')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('reason')
-            .setDescription('Reason for deducting currency (optional)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('set')
-        .setDescription('Set a team\'s currency to a specific amount')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The team to set currency for')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('amount')
-            .setDescription('The amount to set')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('reason')
-            .setDescription('Reason for setting currency (optional)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('view')
-        .setDescription('View a team\'s currency')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The team to view currency for')
-            .setRequired(true))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('award_win')
-        .setDescription('Award win bonus to a team')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The winning team')
-            .setRequired(true))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('award_loss')
-        .setDescription('Award loss compensation to a team')
-        .addRoleOption(option => 
-          option.setName('team')
-            .setDescription('The losing team')
-            .setRequired(true))
-    ),
+    .setName('win')
+    .setDescription('Award win money to a team (Admin only)')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('The team ID or name')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   
-  // Permission check for currency management
-  async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
-    // For viewing, anyone can view currency
-    if (interaction.options.getSubcommand() === 'view') {
-      return true;
-    }
-    
-    // For other operations, need special permissions
-    return interaction.memberPermissions?.has('ManageRoles') || 
-           interaction.memberPermissions?.has('Administrator') || 
-           false;
-  },
-  
-  // Execute the command
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+    // Verify user
+    const allowedUserId = '1177267183584796803'; // Replace with your user ID
+    if (interaction.user.id !== allowedUserId) {
+      await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
     
-    // Detect language
-    const locale = detectLanguage(interaction.guild?.name || '') || 'en';
-    
-    // Get subcommand
-    const subcommand = interaction.options.getSubcommand();
-    
-    // Handle different subcommands
-    switch (subcommand) {
-      case 'award':
-        await handleAwardCurrency(interaction, serverId, locale);
-        break;
-      case 'deduct':
-        await handleDeductCurrency(interaction, serverId, locale);
-        break;
-      case 'set':
-        await handleSetCurrency(interaction, serverId, locale);
-        break;
-      case 'view':
-        await handleViewCurrency(interaction, serverId, locale);
-        break;
-      case 'award_win':
-        await handleAwardWin(interaction, serverId, locale);
-        break;
-      case 'award_loss':
-        await handleAwardLoss(interaction, serverId, locale);
-        break;
-      default:
-        await interaction.reply({ content: 'Unknown subcommand!', ephemeral: true });
-    }
+    await handleCurrencyCommand(interaction, 'win');
   }
 };
 
-// Arabic version - عملة command
-const currencyArabicCommand = {
+// Grant money to a team (loss) - only for admin
+const lossCommand = {
   data: new SlashCommandBuilder()
-    .setName('عملة')
-    .setDescription('إدارة عملة الفريق')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('منح')
-        .setDescription('منح عملة لفريق')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق المراد منحه عملة')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('المبلغ')
-            .setDescription('المبلغ المراد منحه')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('السبب')
-            .setDescription('سبب منح العملة (اختياري)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('خصم')
-        .setDescription('خصم عملة من فريق')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق المراد خصم العملة منه')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('المبلغ')
-            .setDescription('المبلغ المراد خصمه')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('السبب')
-            .setDescription('سبب خصم العملة (اختياري)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('تعيين')
-        .setDescription('تعيين عملة فريق إلى مبلغ محدد')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق المراد تعيين العملة له')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('المبلغ')
-            .setDescription('المبلغ المراد تعيينه')
-            .setRequired(true))
-        .addStringOption(option =>
-          option.setName('السبب')
-            .setDescription('سبب تعيين العملة (اختياري)')
-            .setRequired(false))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('عرض')
-        .setDescription('عرض عملة فريق')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق المراد عرض عملته')
-            .setRequired(true))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('مكافأة_فوز')
-        .setDescription('منح مكافأة الفوز لفريق')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق الفائز')
-            .setRequired(true))
-    )
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('تعويض_خسارة')
-        .setDescription('منح تعويض الخسارة لفريق')
-        .addRoleOption(option => 
-          option.setName('الفريق')
-            .setDescription('الفريق الخاسر')
-            .setRequired(true))
-    ),
+    .setName('loss')
+    .setDescription('Award loss money to a team (Admin only)')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('The team ID or name')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   
-  // Same permission check as English version
-  async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
-    // For viewing, anyone can view currency
-    if (interaction.options.getSubcommand() === 'عرض') {
-      return true;
-    }
-    
-    // For other operations, need special permissions
-    return interaction.memberPermissions?.has('ManageRoles') || 
-           interaction.memberPermissions?.has('Administrator') || 
-           false;
-  },
-  
-  // Execute command - map Arabic subcommands to English handlers
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'لا يمكن استخدام هذا الأمر إلا في خادم!', ephemeral: true });
+    // Verify user
+    const allowedUserId = '1177267183584796803'; // Replace with your user ID
+    if (interaction.user.id !== allowedUserId) {
+      await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
     
-    // Always use Arabic for this command
-    const locale = 'ar';
-    
-    // Get subcommand and map options
-    const subcommand = interaction.options.getSubcommand();
-    
-    switch (subcommand) {
-      case 'منح': // award
-        const awardTeam = interaction.options.getRole('الفريق');
-        const awardAmount = interaction.options.getInteger('المبلغ');
-        const awardReason = interaction.options.getString('السبب');
-        
-        // Create modified interaction with mapped options
-        const awardInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'award',
-            getRole: (name: string) => name === 'team' ? awardTeam : null,
-            getInteger: (name: string) => name === 'amount' ? awardAmount : null,
-            getString: (name: string) => name === 'reason' ? awardReason : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleAwardCurrency(awardInteraction, serverId, locale);
-        break;
-        
-      case 'خصم': // deduct
-        const deductTeam = interaction.options.getRole('الفريق');
-        const deductAmount = interaction.options.getInteger('المبلغ');
-        const deductReason = interaction.options.getString('السبب');
-        
-        // Create modified interaction with mapped options
-        const deductInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'deduct',
-            getRole: (name: string) => name === 'team' ? deductTeam : null,
-            getInteger: (name: string) => name === 'amount' ? deductAmount : null,
-            getString: (name: string) => name === 'reason' ? deductReason : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleDeductCurrency(deductInteraction, serverId, locale);
-        break;
-        
-      case 'تعيين': // set
-        const setTeam = interaction.options.getRole('الفريق');
-        const setAmount = interaction.options.getInteger('المبلغ');
-        const setReason = interaction.options.getString('السبب');
-        
-        // Create modified interaction with mapped options
-        const setInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'set',
-            getRole: (name: string) => name === 'team' ? setTeam : null,
-            getInteger: (name: string) => name === 'amount' ? setAmount : null,
-            getString: (name: string) => name === 'reason' ? setReason : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleSetCurrency(setInteraction, serverId, locale);
-        break;
-        
-      case 'عرض': // view
-        const viewTeam = interaction.options.getRole('الفريق');
-        
-        // Create modified interaction with mapped options
-        const viewInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'view',
-            getRole: (name: string) => name === 'team' ? viewTeam : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleViewCurrency(viewInteraction, serverId, locale);
-        break;
-        
-      case 'مكافأة_فوز': // award_win
-        const winTeam = interaction.options.getRole('الفريق');
-        
-        // Create modified interaction with mapped options
-        const winInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'award_win',
-            getRole: (name: string) => name === 'team' ? winTeam : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleAwardWin(winInteraction, serverId, locale);
-        break;
-        
-      case 'تعويض_خسارة': // award_loss
-        const lossTeam = interaction.options.getRole('الفريق');
-        
-        // Create modified interaction with mapped options
-        const lossInteraction = {
-          ...interaction,
-          options: {
-            ...interaction.options,
-            getSubcommand: () => 'award_loss',
-            getRole: (name: string) => name === 'team' ? lossTeam : null
-          }
-        } as ChatInputCommandInteraction;
-        
-        await handleAwardLoss(lossInteraction, serverId, locale);
-        break;
-        
-      default:
-        await interaction.reply({ content: 'أمر فرعي غير معروف!', ephemeral: true });
-    }
+    await handleCurrencyCommand(interaction, 'loss');
   }
 };
 
-// Helper function to handle awarding currency
-async function handleAwardCurrency(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
+// Arabic versions
+const winArabicCommand = {
+  data: new SlashCommandBuilder()
+    .setName('فوز')
+    .setDescription('منح أموال الفوز لفريق (للمشرف فقط)')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('رمز الفريق أو اسمه')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    // Verify user
+    const allowedUserId = '1177267183584796803'; // Replace with your user ID
+    if (interaction.user.id !== allowedUserId) {
+      await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
+      return;
+    }
+    
+    await handleCurrencyCommand(interaction, 'win');
+  }
+};
+
+const lossArabicCommand = {
+  data: new SlashCommandBuilder()
+    .setName('خسارة')
+    .setDescription('منح أموال الخسارة لفريق (للمشرف فقط)')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('رمز الفريق أو اسمه')
+        .setRequired(true))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+  
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    // Verify user
+    const allowedUserId = '1177267183584796803'; // Replace with your user ID
+    if (interaction.user.id !== allowedUserId) {
+      await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
+      return;
+    }
+    
+    await handleCurrencyCommand(interaction, 'loss');
+  }
+};
+
+// Handle currency commands
+async function handleCurrencyCommand(
+  interaction: ChatInputCommandInteraction, 
+  type: 'win' | 'loss'
 ): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  const amount = interaction.options.getInteger('amount');
-  const reason = interaction.options.getString('reason') || 'Manual award';
+  await interaction.deferReply();
   
-  if (!teamRole || !amount) {
-    await interaction.reply({ content: 'Team and amount are required!', ephemeral: true });
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
   
-  if (amount <= 0) {
-    await interaction.reply({ content: 'Amount must be positive!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Update team currency
-  const updatedTeam = await storage.updateTeam(team.id, {
-    currency: (team.currency || 0) + amount
-  });
-  
-  // Create a currency transaction record
-  await storage.createTransaction({
-    serverId,
-    transactionType: 'currency',
-    targetTeamId: team.id,
-    amount,
-    status: 'approved',
-    approvedBy: interaction.user.id,
-    reason
-  });
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Currency Award')
-    .setDescription(`${team.emoji} ${team.name} has been awarded ${formatCurrency(amount)} coins.`)
-    .addFields(
-      { name: 'New Balance', value: formatCurrency(updatedTeam?.currency || 0) },
-      { name: 'Reason', value: reason }
+  try {
+    // Get settings to determine award amounts
+    const settings = await storage.getSettings(serverId);
+    let amount = 0;
+    
+    if (type === 'win') {
+      amount = settings?.winCurrency || 10000000; // Default 10M
+    } else {
+      amount = settings?.lossCurrency || 5000000; // Default 5M
+    }
+    
+    // Get team 
+    const teamIdentifier = interaction.options.getString('team', true);
+    let team;
+    
+    // Try to find by team name first (case insensitive)
+    const teams = await storage.getTeams(serverId);
+    team = teams.find(t => 
+      t.name.toLowerCase() === teamIdentifier.toLowerCase() || 
+      t.teamId === teamIdentifier
     );
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
+    
+    if (!team) {
+      await interaction.editReply({ content: `لم يتم العثور على الفريق: ${teamIdentifier}` });
+      return;
+    }
+    
+    // Update team currency
+    const newBalance = (team.currency || 0) + amount;
+    await storage.updateTeam(team.id, {
+      currency: newBalance,
+      updatedAt: new Date()
+    });
+    
+    // Create transaction record
+    const transaction = await storage.createTransaction({
+      serverId,
+      transactionType: type === 'win' ? 'win_award' : 'loss_award',
+      amount,
+      status: 'completed',
+      sourceTeamId: null,
+      targetTeamId: team.id,
+      playerId: null,
+      reason: type === 'win' 
+        ? `${team.name} تم منح جائزة الفوز: ${formatCurrency(amount)}`
+        : `${team.name} تم منح تعويض الخسارة: ${formatCurrency(amount)}`,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    // Create and send embed
+    const embed = new EmbedBuilder()
+      .setColor(type === 'win' ? '#2ecc71' : '#f39c12')
+      .setTitle(`${team.emoji} ${team.name} ${type === 'win' ? 'Win' : 'Loss'} Award`)
+      .setDescription(`${team.emoji} ${team.name} has been awarded ${formatCurrency(amount)} for a ${type === 'win' ? 'win' : 'loss'}!`)
+      .addFields(
+        { name: 'New Balance', value: formatCurrency(newBalance) },
+        { name: 'Awarded By', value: `<@${interaction.user.id}>` }
+      );
+    
+    await interaction.editReply({ embeds: [embed] });
+    
+    // Notify team coaches
+    try {
+      const coachAssignments = await storage.getCoachAssignmentsByTeam(team.id);
+      const guild = interaction.guild;
+      
+      if (guild && coachAssignments.length > 0) {
+        for (const assignment of coachAssignments) {
+          try {
+            const coachMember = await guild.members.fetch(assignment.userId);
+            await coachMember.send({ 
+              content: `تم منح فريقك ${formatCurrency(amount)} ${type === 'win' ? 'لفوزه بالمباراة!' : 'كتعويض عن الخسارة.'}`,
+              embeds: [embed]
+            });
+          } catch (error) {
+            console.error(`Failed to notify coach ${assignment.userId}:`, error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error notifying coaches:', error);
+    }
+    
+  } catch (error) {
+    console.error(`Error handling ${type} command:`, error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء معالجة الأمر. الرجاء المحاولة مرة أخرى.' });
+  }
 }
 
-// Helper function to handle deducting currency
-async function handleDeductCurrency(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  const amount = interaction.options.getInteger('amount');
-  const reason = interaction.options.getString('reason') || 'Manual deduction';
+// Balance command - check team's currency balance
+const balanceCommand = {
+  data: new SlashCommandBuilder()
+    .setName('balance')
+    .setDescription('Check team balance')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('The team ID or name (optional)')
+        .setRequired(false)),
   
-  if (!teamRole || !amount) {
-    await interaction.reply({ content: 'Team and amount are required!', ephemeral: true });
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    await handleBalanceCommand(interaction);
+  }
+};
+
+// Arabic version
+const balanceArabicCommand = {
+  data: new SlashCommandBuilder()
+    .setName('رصيد')
+    .setDescription('التحقق من رصيد الفريق')
+    .addStringOption(option => 
+      option.setName('team')
+        .setDescription('رمز الفريق أو اسمه (اختياري)')
+        .setRequired(false)),
+  
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+    await handleBalanceCommand(interaction);
+  }
+};
+
+async function handleBalanceCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  await interaction.deferReply();
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
   
-  if (amount <= 0) {
-    await interaction.reply({ content: 'Amount must be positive!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Check if team has enough currency
-  if ((team.currency || 0) < amount) {
-    await interaction.reply({ 
-      content: `Team ${team.emoji} ${team.name} does not have enough currency (${formatCurrency(team.currency || 0)} available, ${formatCurrency(amount)} required).`,
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Update team currency
-  const updatedTeam = await storage.updateTeam(team.id, {
-    currency: (team.currency || 0) - amount
-  });
-  
-  // Create a currency transaction record
-  await storage.createTransaction({
-    serverId,
-    transactionType: 'currency',
-    targetTeamId: team.id,
-    amount: -amount,
-    status: 'approved',
-    approvedBy: interaction.user.id,
-    reason
-  });
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Currency Deduction')
-    .setDescription(`${amount.toLocaleString()} coins have been deducted from ${team.emoji} ${team.name}.`)
-    .addFields(
-      { name: 'New Balance', value: formatCurrency(updatedTeam?.currency || 0) },
-      { name: 'Reason', value: reason }
+  try {
+    const teamIdentifier = interaction.options.getString('team');
+    
+    // If no team specified, try to get the user's team
+    if (!teamIdentifier) {
+      const coachAssignments = await storage.getCoachAssignmentsByUser(serverId, interaction.user.id);
+      
+      if (coachAssignments.length === 0) {
+        await interaction.editReply({ content: 'يرجى تحديد فريق أو استخدام هذا الأمر كمدرب.' });
+        return;
+      }
+      
+      const team = await storage.getTeam(coachAssignments[0].teamId);
+      if (!team) {
+        await interaction.editReply({ content: 'لم يتم العثور على الفريق المرتبط بك.' });
+        return;
+      }
+      
+      const embed = new EmbedBuilder()
+        .setColor('#3498db')
+        .setTitle(`${team.emoji} ${team.name} Balance`)
+        .setDescription(`Current balance: **${formatCurrency(team.currency || 0)}**`);
+      
+      await interaction.editReply({ embeds: [embed] });
+      return;
+    }
+    
+    // Find team by name or ID
+    const teams = await storage.getTeams(serverId);
+    const team = teams.find(t => 
+      t.name.toLowerCase() === teamIdentifier.toLowerCase() || 
+      t.teamId === teamIdentifier
     );
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
+    
+    if (!team) {
+      await interaction.editReply({ content: `لم يتم العثور على الفريق: ${teamIdentifier}` });
+      return;
+    }
+    
+    // Check if user is allowed to see this team's balance
+    const isAdmin = interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
+    const isCoach = (await storage.getCoachAssignmentsByUser(serverId, interaction.user.id))
+      .some(a => a.teamId === team.id);
+    
+    if (!isAdmin && !isCoach) {
+      await interaction.editReply({ 
+        content: 'ليس لديك صلاحية لعرض رصيد هذا الفريق. يجب أن تكون مدرباً للفريق أو مسؤولاً.',
+        ephemeral: true
+      });
+      return;
+    }
+    
+    // Show balance
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle(`${team.emoji} ${team.name} Balance`)
+      .setDescription(`Current balance: **${formatCurrency(team.currency || 0)}**`);
+    
+    await interaction.editReply({ embeds: [embed] });
+    
+  } catch (error) {
+    console.error('Error handling balance command:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء معالجة الأمر. الرجاء المحاولة مرة أخرى.' });
+  }
 }
 
-// Helper function to handle setting currency
-async function handleSetCurrency(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  const amount = interaction.options.getInteger('amount');
-  const reason = interaction.options.getString('reason') || 'Manual set';
-  
-  if (!teamRole || amount === null || amount === undefined) {
-    await interaction.reply({ content: 'Team and amount are required!', ephemeral: true });
-    return;
-  }
-  
-  if (amount < 0) {
-    await interaction.reply({ content: 'Amount cannot be negative!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Calculate difference for transaction record
-  const difference = amount - (team.currency || 0);
-  
-  // Update team currency
-  const updatedTeam = await storage.updateTeam(team.id, {
-    currency: amount
-  });
-  
-  // Create a currency transaction record
-  await storage.createTransaction({
-    serverId,
-    transactionType: 'currency',
-    targetTeamId: team.id,
-    amount: difference,
-    status: 'approved',
-    approvedBy: interaction.user.id,
-    reason
-  });
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Currency Set')
-    .setDescription(`${team.emoji} ${team.name}'s currency has been set to ${formatCurrency(amount)} coins.`)
-    .addFields(
-      { name: 'Previous Balance', value: formatCurrency(team.currency || 0) },
-      { name: 'Change', value: formatCurrency(difference) },
-      { name: 'Reason', value: reason }
-    );
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
-}
-
-// Helper function to handle viewing currency
-async function handleViewCurrency(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  
-  if (!teamRole) {
-    await interaction.reply({ content: 'Team is required!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Get recent transactions
-  const transactions = await storage.getTransactionsByTeam(team.id);
-  const recentTransactions = transactions
-    .filter(t => t.status === 'approved')
-    .slice(0, 5); // Show only 5 most recent
-  
-  // Format recent transactions
-  const transactionsText = recentTransactions.length > 0
-    ? recentTransactions.map(t => {
-        const amountText = t.amount > 0 
-          ? `+${formatCurrency(t.amount)}` 
-          : formatCurrency(t.amount);
-        return `${amountText} - ${t.reason || 'No reason'} (<t:${Math.floor(t.createdAt.getTime() / 1000)}:R>)`;
-      }).join('\n')
-    : 'No recent transactions';
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle(`${team.emoji} ${team.name} - Currency`)
-    .setDescription(`Current balance: **${formatCurrency(team.currency || 0)}** coins`)
-    .addFields({ name: 'Recent Transactions', value: transactionsText });
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
-}
-
-// Helper function to handle awarding win currency
-async function handleAwardWin(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  
-  if (!teamRole) {
-    await interaction.reply({ content: 'Team is required!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Get server settings
-  const settings = await storage.getSettings(serverId);
-  
-  if (!settings) {
-    await interaction.reply({ 
-      content: 'Server settings not found! Please run /setup first.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Get win amount
-  const winAmount = settings.winCurrency || 10000000; // Default to 10M
-  
-  // Update team currency
-  const updatedTeam = await storage.updateTeam(team.id, {
-    currency: (team.currency || 0) + winAmount
-  });
-  
-  // Create a currency transaction record
-  await storage.createTransaction({
-    serverId,
-    transactionType: 'currency',
-    targetTeamId: team.id,
-    amount: winAmount,
-    status: 'approved',
-    approvedBy: interaction.user.id,
-    reason: 'Win bonus'
-  });
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Win Bonus')
-    .setDescription(`${team.emoji} ${team.name} has been awarded ${formatCurrency(winAmount)} coins for winning!`)
-    .addFields({ name: 'New Balance', value: formatCurrency(updatedTeam?.currency || 0) });
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
-}
-
-// Helper function to handle awarding loss currency
-async function handleAwardLoss(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const teamRole = interaction.options.getRole('team');
-  
-  if (!teamRole) {
-    await interaction.reply({ content: 'Team is required!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, teamRole.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: 'Team not found! Make sure you selected a valid team role.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Get server settings
-  const settings = await storage.getSettings(serverId);
-  
-  if (!settings) {
-    await interaction.reply({ 
-      content: 'Server settings not found! Please run /setup first.',
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Get loss amount
-  const lossAmount = settings.lossCurrency || 5000000; // Default to 5M
-  
-  // Update team currency
-  const updatedTeam = await storage.updateTeam(team.id, {
-    currency: (team.currency || 0) + lossAmount
-  });
-  
-  // Create a currency transaction record
-  await storage.createTransaction({
-    serverId,
-    transactionType: 'currency',
-    targetTeamId: team.id,
-    amount: lossAmount,
-    status: 'approved',
-    approvedBy: interaction.user.id,
-    reason: 'Loss compensation'
-  });
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Loss Compensation')
-    .setDescription(`${team.emoji} ${team.name} has been awarded ${formatCurrency(lossAmount)} coins for participating.`)
-    .addFields({ name: 'New Balance', value: formatCurrency(updatedTeam?.currency || 0) });
-  
-  await interaction.reply({ 
-    embeds: [embed],
-    ephemeral: false
-  });
-}
-
-// Export all currency-related commands
 export const currencyCommands = [
-  currencyCommand,
-  currencyArabicCommand
+  winCommand,
+  winArabicCommand,
+  lossCommand,
+  lossArabicCommand,
+  balanceCommand,
+  balanceArabicCommand
 ];

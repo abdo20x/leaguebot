@@ -24,7 +24,44 @@ const signCommand = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    await handleSignCommand(interaction);
+    // Check if user has coach role before allowing command
+    const serverId = interaction.guildId;
+    if (!serverId) {
+      await interaction.reply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!', ephemeral: true });
+      return;
+    }
+    
+    try {
+      // Get all coach roles
+      const coaches = await storage.getCoaches(serverId);
+      const coachRoleIds = coaches.map(coach => coach.roleId);
+      
+      // Check if user has any coach role
+      const member = interaction.member;
+      if (!member || !('roles' in member)) {
+        await interaction.reply({ content: 'فشل في التحقق من صلاحياتك.', ephemeral: true });
+        return;
+      }
+      
+      const memberRoles = Array.isArray(member.roles) 
+        ? member.roles 
+        : member.roles.cache.map(role => role.id);
+      
+      const hasCoachRole = memberRoles.some(roleId => coachRoleIds.includes(roleId));
+      
+      if (!hasCoachRole) {
+        await interaction.reply({ content: 'يجب أن تكون مدرباً لفريق لاستخدام هذا الأمر.', ephemeral: true });
+        return;
+      }
+      
+      await handleSignCommand(interaction);
+    } catch (error) {
+      console.error('Error verifying coach role:', error);
+      await interaction.reply({ 
+        content: 'حدث خطأ أثناء التحقق من صلاحياتك. الرجاء المحاولة مرة أخرى.',
+        ephemeral: true 
+      });
+    }
   }
 };
 
@@ -40,7 +77,44 @@ const signArabicCommand = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    await handleSignCommand(interaction);
+    // Check if user has coach role before allowing command
+    const serverId = interaction.guildId;
+    if (!serverId) {
+      await interaction.reply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!', ephemeral: true });
+      return;
+    }
+    
+    try {
+      // Get all coach roles
+      const coaches = await storage.getCoaches(serverId);
+      const coachRoleIds = coaches.map(coach => coach.roleId);
+      
+      // Check if user has any coach role
+      const member = interaction.member;
+      if (!member || !('roles' in member)) {
+        await interaction.reply({ content: 'فشل في التحقق من صلاحياتك.', ephemeral: true });
+        return;
+      }
+      
+      const memberRoles = Array.isArray(member.roles) 
+        ? member.roles 
+        : member.roles.cache.map(role => role.id);
+      
+      const hasCoachRole = memberRoles.some(roleId => coachRoleIds.includes(roleId));
+      
+      if (!hasCoachRole) {
+        await interaction.reply({ content: 'يجب أن تكون مدرباً لفريق لاستخدام هذا الأمر.', ephemeral: true });
+        return;
+      }
+      
+      await handleSignCommand(interaction);
+    } catch (error) {
+      console.error('Error verifying coach role:', error);
+      await interaction.reply({ 
+        content: 'حدث خطأ أثناء التحقق من صلاحياتك. الرجاء المحاولة مرة أخرى.',
+        ephemeral: true 
+      });
+    }
   }
 };
 
@@ -56,7 +130,44 @@ const releaseCommand = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    await handleReleaseCommand(interaction);
+    // Check if user has coach role before allowing command
+    const serverId = interaction.guildId;
+    if (!serverId) {
+      await interaction.reply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!', ephemeral: true });
+      return;
+    }
+    
+    try {
+      // Get all coach roles
+      const coaches = await storage.getCoaches(serverId);
+      const coachRoleIds = coaches.map(coach => coach.roleId);
+      
+      // Check if user has any coach role
+      const member = interaction.member;
+      if (!member || !('roles' in member)) {
+        await interaction.reply({ content: 'فشل في التحقق من صلاحياتك.', ephemeral: true });
+        return;
+      }
+      
+      const memberRoles = Array.isArray(member.roles) 
+        ? member.roles 
+        : member.roles.cache.map(role => role.id);
+      
+      const hasCoachRole = memberRoles.some(roleId => coachRoleIds.includes(roleId));
+      
+      if (!hasCoachRole) {
+        await interaction.reply({ content: 'يجب أن تكون مدرباً لفريق لاستخدام هذا الأمر.', ephemeral: true });
+        return;
+      }
+      
+      await handleReleaseCommand(interaction);
+    } catch (error) {
+      console.error('Error verifying coach role:', error);
+      await interaction.reply({ 
+        content: 'حدث خطأ أثناء التحقق من صلاحياتك. الرجاء المحاولة مرة أخرى.',
+        ephemeral: true 
+      });
+    }
   }
 };
 
@@ -72,7 +183,44 @@ const releaseArabicCommand = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    await handleReleaseCommand(interaction);
+    // Check if user has coach role before allowing command
+    const serverId = interaction.guildId;
+    if (!serverId) {
+      await interaction.reply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!', ephemeral: true });
+      return;
+    }
+    
+    try {
+      // Get all coach roles
+      const coaches = await storage.getCoaches(serverId);
+      const coachRoleIds = coaches.map(coach => coach.roleId);
+      
+      // Check if user has any coach role
+      const member = interaction.member;
+      if (!member || !('roles' in member)) {
+        await interaction.reply({ content: 'فشل في التحقق من صلاحياتك.', ephemeral: true });
+        return;
+      }
+      
+      const memberRoles = Array.isArray(member.roles) 
+        ? member.roles 
+        : member.roles.cache.map(role => role.id);
+      
+      const hasCoachRole = memberRoles.some(roleId => coachRoleIds.includes(roleId));
+      
+      if (!hasCoachRole) {
+        await interaction.reply({ content: 'يجب أن تكون مدرباً لفريق لاستخدام هذا الأمر.', ephemeral: true });
+        return;
+      }
+      
+      await handleReleaseCommand(interaction);
+    } catch (error) {
+      console.error('Error verifying coach role:', error);
+      await interaction.reply({ 
+        content: 'حدث خطأ أثناء التحقق من صلاحياتك. الرجاء المحاولة مرة أخرى.',
+        ephemeral: true 
+      });
+    }
   }
 };
 
@@ -185,6 +333,9 @@ async function handleSignCommand(interaction: ChatInputCommandInteraction): Prom
       updatedAt: new Date()
     });
     
+    // Get coach username for display
+    const coachUsername = `<@${interaction.user.id}>`;
+    
     // Create and send embed
     const embed = createTransactionEmbed(
       'sign',
@@ -192,7 +343,8 @@ async function handleSignCommand(interaction: ChatInputCommandInteraction): Prom
       'signed',
       team,
       undefined,
-      player
+      player,
+      coachUsername
     );
     
     await interaction.editReply({ embeds: [embed] });
@@ -302,6 +454,9 @@ async function handleReleaseCommand(interaction: ChatInputCommandInteraction): P
       updatedAt: new Date()
     });
     
+    // Get coach username for display
+    const coachUsername = `<@${interaction.user.id}>`;
+    
     // Create and send embed
     const embed = createTransactionEmbed(
       'release',
@@ -309,7 +464,8 @@ async function handleReleaseCommand(interaction: ChatInputCommandInteraction): P
       'released',
       team,
       undefined,
-      player
+      player,
+      coachUsername
     );
     
     await interaction.editReply({ embeds: [embed] });

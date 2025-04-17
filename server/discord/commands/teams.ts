@@ -1,12 +1,15 @@
-// Team management commands
 import { 
   SlashCommandBuilder, 
-  ChatInputCommandInteraction
+  ChatInputCommandInteraction,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  PermissionFlagsBits,
+  Role
 } from "discord.js";
 import { storage } from "../../storage";
-import { createBaseEmbed, createTeamDetailsEmbed } from "../embeds";
-import { detectLanguage, getTranslation } from "../translations";
-import { isValidEmoji, generateTeamId } from "../utils";
+import { isValidEmoji } from "../utils";
 
 // Teams add command
 const teamsAddCommand = {
@@ -16,412 +19,432 @@ const teamsAddCommand = {
     .addSubcommand(subcommand =>
       subcommand
         .setName('add')
-        .setDescription('Add a team & emoji pair')
+        .setDescription('Add a new team')
         .addRoleOption(option => 
           option.setName('role')
             .setDescription('The team role')
             .setRequired(true))
         .addStringOption(option => 
           option.setName('emoji')
-            .setDescription('The emoji to represent the team')
-            .setRequired(true))
-        .addIntegerOption(option => 
-          option.setName('roster_cap')
-            .setDescription('Maximum roster size (default: 22)')
-            .setRequired(false))
-        .addIntegerOption(option => 
-          option.setName('initial_currency')
-            .setDescription('Initial currency amount (default: 50M)')
-            .setRequired(false))
-    )
+            .setDescription('The team emoji')
+            .setRequired(true)))
     .addSubcommand(subcommand =>
       subcommand
         .setName('view')
-        .setDescription('View the teams in the league')
-    )
+        .setDescription('View all teams'))
     .addSubcommand(subcommand =>
       subcommand
         .setName('remove')
-        .setDescription('Remove a team & emoji pair')
+        .setDescription('Remove a team')
         .addRoleOption(option => 
           option.setName('role')
             .setDescription('The team role to remove')
-            .setRequired(true))
-    )
+            .setRequired(true)))
     .addSubcommand(subcommand =>
       subcommand
         .setName('edit')
-        .setDescription('Change a team\'s paired emoji')
+        .setDescription('Edit a team')
         .addRoleOption(option => 
           option.setName('role')
             .setDescription('The team role to edit')
             .setRequired(true))
         .addStringOption(option => 
           option.setName('emoji')
-            .setDescription('The new emoji to represent the team')
-            .setRequired(true))
-    ),
+            .setDescription('The new team emoji')
+            .setRequired(true)))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   
-  // Permission check - needs manage roles or administrator
-  async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
-    return interaction.memberPermissions?.has('ManageRoles') || 
-           interaction.memberPermissions?.has('Administrator') || 
-           false;
-  },
-  
-  // Execute the command
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
-      return;
-    }
-    
-    // Detect language
-    const locale = detectLanguage(interaction.guild?.name || '') || 'en';
-    
-    // Get subcommand
     const subcommand = interaction.options.getSubcommand();
     
-    // Handle different subcommands
     switch (subcommand) {
       case 'add':
-        await handleAddTeam(interaction, serverId, locale);
+        await handleTeamsAddCommand(interaction);
         break;
       case 'view':
-        await handleViewTeams(interaction, serverId, locale);
+        await handleTeamsViewCommand(interaction);
         break;
       case 'remove':
-        await handleRemoveTeam(interaction, serverId, locale);
+        await handleTeamsRemoveCommand(interaction);
         break;
       case 'edit':
-        await handleEditTeam(interaction, serverId, locale);
+        await handleTeamsEditCommand(interaction);
         break;
       default:
-        await interaction.reply({ content: 'Unknown subcommand!', ephemeral: true });
+        await interaction.reply({ content: 'Unknown subcommand', ephemeral: true });
     }
   }
 };
 
-// Team salaries command
-const teamSalariesCommand = {
+// Arabic version - فرق command
+const teamsArabicCommand = {
   data: new SlashCommandBuilder()
-    .setName('teamsalaries')
-    .setDescription('View a list of the teams salaries'),
+    .setName('فرق')
+    .setDescription('إدارة الفرق في الدوري')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('اضافة')
+        .setDescription('إضافة فريق جديد')
+        .addRoleOption(option => 
+          option.setName('رتبة')
+            .setDescription('رتبة الفريق')
+            .setRequired(true))
+        .addStringOption(option => 
+          option.setName('رمز')
+            .setDescription('رمز تعبيري للفريق')
+            .setRequired(true)))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('عرض')
+        .setDescription('عرض جميع الفرق'))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('حذف')
+        .setDescription('حذف فريق')
+        .addRoleOption(option => 
+          option.setName('رتبة')
+            .setDescription('رتبة الفريق المراد حذفها')
+            .setRequired(true)))
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('تعديل')
+        .setDescription('تعديل فريق')
+        .addRoleOption(option => 
+          option.setName('رتبة')
+            .setDescription('رتبة الفريق المراد تعديلها')
+            .setRequired(true))
+        .addStringOption(option => 
+          option.setName('رمز')
+            .setDescription('الرمز التعبيري الجديد للفريق')
+            .setRequired(true)))
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
   
-  // Execute the command
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
-      return;
+    const subcommand = interaction.options.getSubcommand();
+    
+    switch (subcommand) {
+      case 'اضافة':
+        await handleTeamsAddCommand(interaction);
+        break;
+      case 'عرض':
+        await handleTeamsViewCommand(interaction);
+        break;
+      case 'حذف':
+        await handleTeamsRemoveCommand(interaction);
+        break;
+      case 'تعديل':
+        await handleTeamsEditCommand(interaction);
+        break;
+      default:
+        await interaction.reply({ content: 'أمر فرعي غير معروف', ephemeral: true });
     }
-    
-    // Detect language
-    const locale = detectLanguage(interaction.guild?.name || '') || 'en';
-    
-    // Get teams with their currency values
-    const teams = await storage.getTeams(serverId);
-    
-    // Create embed
-    const embed = createBaseEmbed(locale)
-      .setTitle('Team Salaries')
-      .setDescription('Currency amounts for all teams');
-    
-    // Add team fields
-    if (teams.length === 0) {
-      embed.addFields({ name: 'No Teams', value: 'No teams have been added yet.' });
-    } else {
-      const teamsField = teams.map(team => 
-        `${team.emoji} **${team.name}**: ${team.currency?.toLocaleString() || 0} coins`
-      ).join('\n');
-      
-      embed.setDescription(teamsField);
-    }
-    
-    await interaction.reply({ embeds: [embed] });
   }
 };
 
-// Team owners command
-const teamOwnersCommand = {
-  data: new SlashCommandBuilder()
-    .setName('teamowners')
-    .setDescription('View a list of the team owners'),
+// Handle teams add command
+async function handleTeamsAddCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  await interaction.deferReply();
   
-  // Execute the command
-  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
+    return;
+  }
+  
+  try {
+    // Get the options
+    const role = interaction.options.getRole('role') || interaction.options.getRole('رتبة');
+    const emoji = interaction.options.getString('emoji') || interaction.options.getString('رمز');
+    
+    if (!role || !emoji) {
+      await interaction.editReply({ content: 'يجب تحديد الرتبة والرمز التعبيري للفريق.' });
       return;
     }
     
-    // Detect language
-    const locale = detectLanguage(interaction.guild?.name || '') || 'en';
+    // Validate emoji
+    if (!isValidEmoji(emoji)) {
+      await interaction.editReply({ content: 'الرمز التعبيري غير صالح. يرجى استخدام رمز تعبيري قياسي.' });
+      return;
+    }
     
-    // Get teams
-    const teams = await storage.getTeams(serverId);
+    // Check if team with this role already exists
+    const existingTeam = await storage.getTeamByRoleId(serverId, role.id);
+    if (existingTeam) {
+      await interaction.editReply({ content: `يوجد بالفعل فريق يستخدم هذه الرتبة: ${role.name}` });
+      return;
+    }
+    
+    // Check if team with this emoji already exists
+    const existingEmojiTeam = await storage.getTeamByEmoji(serverId, emoji);
+    if (existingEmojiTeam) {
+      await interaction.editReply({ content: `يوجد بالفعل فريق يستخدم هذا الرمز التعبيري: ${emoji}` });
+      return;
+    }
+    
+    // Create team
+    const team = await storage.createTeam({
+      serverId,
+      teamId: `${serverId}-${role.id}`,
+      name: role.name,
+      emoji: emoji,
+      roleId: role.id,
+      currency: 50000000, // Default 50M currency
+      rosterCount: 0,
+      rosterMax: 22,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
     
     // Create embed
-    const embed = createBaseEmbed(locale)
-      .setTitle('Team Owners')
-      .setDescription('Owners for all teams');
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle('تم إنشاء فريق جديد')
+      .setDescription(`تم إنشاء فريق ${emoji} ${role.name} بنجاح.`)
+      .addFields(
+        { name: 'الرتبة', value: `<@&${role.id}>` },
+        { name: 'الرمز التعبيري', value: emoji }
+      );
     
-    // Add team fields
+    await interaction.editReply({ embeds: [embed] });
+    
+  } catch (error) {
+    console.error('Error handling teams add command:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء إنشاء الفريق. الرجاء المحاولة مرة أخرى.' });
+  }
+}
+
+// Handle teams view command
+async function handleTeamsViewCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  await interaction.deferReply();
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
+    return;
+  }
+  
+  try {
+    // Get all teams
+    const teams = await storage.getTeams(serverId);
+    
     if (teams.length === 0) {
-      embed.addFields({ name: 'No Teams', value: 'No teams have been added yet.' });
-    } else {
-      // For each team, get captains/coaches
-      for (const team of teams) {
-        const coachAssignments = await storage.getCoachAssignmentsByTeam(team.id);
-        const captains = coachAssignments
-          .filter(ca => ca.coachId === 1) // Assuming 1 is for captains
-          .map(ca => `<@${ca.userId}>`)
-          .join(', ');
-        
-        embed.addFields({
-          name: `${team.emoji} ${team.name}`,
-          value: captains || 'No owners assigned',
-          inline: true
+      await interaction.editReply({ content: 'لا توجد فرق مسجلة في هذا السيرفر.' });
+      return;
+    }
+    
+    // Create embed
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle('قائمة الفرق')
+      .setDescription('جميع الفرق المسجلة في الدوري:');
+    
+    // Add teams to embed
+    teams.forEach(team => {
+      embed.addFields({
+        name: `${team.emoji} ${team.name}`,
+        value: `الرتبة: <@&${team.roleId}>\nاللاعبين: ${team.rosterCount || 0}/${team.rosterMax || 22}\nالرصيد: ${team.currency?.toLocaleString() || '0'}`
+      });
+    });
+    
+    await interaction.editReply({ embeds: [embed] });
+    
+  } catch (error) {
+    console.error('Error handling teams view command:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء عرض الفرق. الرجاء المحاولة مرة أخرى.' });
+  }
+}
+
+// Handle teams remove command
+async function handleTeamsRemoveCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  await interaction.deferReply();
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
+    return;
+  }
+  
+  try {
+    // Get the role
+    const role = interaction.options.getRole('role') || interaction.options.getRole('رتبة');
+    
+    if (!role) {
+      await interaction.editReply({ content: 'يجب تحديد رتبة الفريق المراد حذفه.' });
+      return;
+    }
+    
+    // Check if team exists
+    const team = await storage.getTeamByRoleId(serverId, role.id);
+    if (!team) {
+      await interaction.editReply({ content: `لا يوجد فريق يستخدم هذه الرتبة: ${role.name}` });
+      return;
+    }
+    
+    // Confirm deletion
+    const confirmRow = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId(`confirm_team_delete_${team.id}`)
+          .setLabel('تأكيد الحذف')
+          .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder()
+          .setCustomId(`cancel_team_delete_${team.id}`)
+          .setLabel('إلغاء')
+          .setStyle(ButtonStyle.Secondary)
+      );
+    
+    // Create embed
+    const embed = new EmbedBuilder()
+      .setColor('#e74c3c')
+      .setTitle('تأكيد حذف الفريق')
+      .setDescription(`هل أنت متأكد من أنك تريد حذف فريق ${team.emoji} ${team.name}؟`)
+      .addFields(
+        { name: 'الرتبة', value: `<@&${role.id}>` },
+        { name: 'الرمز التعبيري', value: team.emoji },
+        { name: 'تحذير', value: 'سيتم حذف جميع البيانات المرتبطة بهذا الفريق، بما في ذلك اللاعبين والمعاملات.' }
+      );
+    
+    const message = await interaction.editReply({ 
+      embeds: [embed],
+      components: [confirmRow]
+    });
+    
+    // Set up collector for buttons
+    const filter = (i: any) => {
+      return i.user.id === interaction.user.id && 
+        (i.customId === `confirm_team_delete_${team.id}` || 
+         i.customId === `cancel_team_delete_${team.id}`);
+    };
+    
+    const collector = message.createMessageComponentCollector({ 
+      filter, 
+      time: 30000,
+      max: 1
+    });
+    
+    collector.on('collect', async i => {
+      if (i.customId === `confirm_team_delete_${team.id}`) {
+        try {
+          // Delete all players in the team
+          const players = await storage.getPlayersByTeam(team.id);
+          for (const player of players) {
+            await storage.deletePlayer(player.id);
+          }
+          
+          // Delete the team
+          await storage.deleteTeam(team.id);
+          
+          const successEmbed = new EmbedBuilder()
+            .setColor('#2ecc71')
+            .setTitle('تم حذف الفريق')
+            .setDescription(`تم حذف فريق ${team.emoji} ${team.name} بنجاح.`);
+          
+          await i.update({ 
+            embeds: [successEmbed],
+            components: []
+          });
+        } catch (error) {
+          console.error('Error deleting team:', error);
+          await i.update({ 
+            content: 'حدث خطأ أثناء حذف الفريق. الرجاء المحاولة مرة أخرى.',
+            embeds: [],
+            components: []
+          });
+        }
+      } else {
+        // Cancel
+        await i.update({ 
+          content: 'تم إلغاء حذف الفريق.',
+          embeds: [],
+          components: []
         });
+      }
+    });
+    
+    collector.on('end', async collected => {
+      if (collected.size === 0) {
+        // Timeout
+        await interaction.editReply({ 
+          content: 'انتهت مهلة تأكيد حذف الفريق.',
+          embeds: [],
+          components: []
+        });
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error handling teams remove command:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء حذف الفريق. الرجاء المحاولة مرة أخرى.' });
+  }
+}
+
+// Handle teams edit command
+async function handleTeamsEditCommand(interaction: ChatInputCommandInteraction): Promise<void> {
+  await interaction.deferReply();
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
+    return;
+  }
+  
+  try {
+    // Get the options
+    const role = interaction.options.getRole('role') || interaction.options.getRole('رتبة');
+    const emoji = interaction.options.getString('emoji') || interaction.options.getString('رمز');
+    
+    if (!role || !emoji) {
+      await interaction.editReply({ content: 'يجب تحديد الرتبة والرمز التعبيري الجديد للفريق.' });
+      return;
+    }
+    
+    // Validate emoji
+    if (!isValidEmoji(emoji)) {
+      await interaction.editReply({ content: 'الرمز التعبيري غير صالح. يرجى استخدام رمز تعبيري قياسي.' });
+      return;
+    }
+    
+    // Check if team exists
+    const team = await storage.getTeamByRoleId(serverId, role.id);
+    if (!team) {
+      await interaction.editReply({ content: `لا يوجد فريق يستخدم هذه الرتبة: ${role.name}` });
+      return;
+    }
+    
+    // Check if emoji is already used by another team
+    if (emoji !== team.emoji) {
+      const existingEmojiTeam = await storage.getTeamByEmoji(serverId, emoji);
+      if (existingEmojiTeam && existingEmojiTeam.id !== team.id) {
+        await interaction.editReply({ content: `يوجد بالفعل فريق يستخدم هذا الرمز التعبيري: ${emoji}` });
+        return;
       }
     }
     
-    await interaction.reply({ embeds: [embed] });
-  }
-};
-
-// Team templates command
-const teamTemplatesCommand = {
-  data: new SlashCommandBuilder()
-    .setName('teamtemplates')
-    .setDescription('Create team roles & emojis for your league'),
-  
-  // Permission check - needs manage roles
-  async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
-    return interaction.memberPermissions?.has('ManageRoles') || 
-           interaction.memberPermissions?.has('Administrator') || 
-           false;
-  },
-  
-  // Execute the command
-  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    const serverId = interaction.guildId;
-    if (!serverId) {
-      await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
-      return;
-    }
+    // Update team
+    const updatedTeam = await storage.updateTeam(team.id, {
+      emoji: emoji,
+      updatedAt: new Date()
+    });
     
-    // Detect language
-    const locale = detectLanguage(interaction.guild?.name || '') || 'en';
-    
-    // Create embed with template options
-    const embed = createBaseEmbed(locale)
-      .setTitle('Team Templates')
-      .setDescription('Choose a template to create standard team roles & emojis:')
+    // Create embed
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle('تم تحديث الفريق')
+      .setDescription(`تم تحديث فريق ${role.name} بنجاح.`)
       .addFields(
-        { name: 'Football/Soccer', value: 'Create standard football/soccer teams' },
-        { name: 'Basketball', value: 'Create standard basketball teams' },
-        { name: 'eSports', value: 'Create standard eSports organization teams' }
+        { name: 'الرتبة', value: `<@&${role.id}>` },
+        { name: 'الرمز التعبيري الجديد', value: emoji }
       );
     
-    await interaction.reply({ 
-      embeds: [embed],
-      content: 'Feature coming soon!',
-      ephemeral: true
-    });
+    await interaction.editReply({ embeds: [embed] });
+    
+  } catch (error) {
+    console.error('Error handling teams edit command:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء تحديث الفريق. الرجاء المحاولة مرة أخرى.' });
   }
-};
-
-// Helper function to handle adding a team
-async function handleAddTeam(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const role = interaction.options.getRole('role');
-  const emoji = interaction.options.getString('emoji');
-  const rosterCap = interaction.options.getInteger('roster_cap') || 22;
-  const initialCurrency = interaction.options.getInteger('initial_currency') || 50000000;
-  
-  if (!role || !emoji) {
-    await interaction.reply({ content: 'Role and emoji are required!', ephemeral: true });
-    return;
-  }
-  
-  // Validate emoji
-  if (!isValidEmoji(emoji)) {
-    await interaction.reply({ 
-      content: getTranslation('invalid_emoji', locale as any),
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Check if team already exists
-  const existingTeam = await storage.getTeamByRoleId(serverId, role.id);
-  
-  if (existingTeam) {
-    await interaction.reply({ 
-      content: getTranslation('team_already_exists', locale as any),
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Create the team
-  const teamId = generateTeamId(serverId, role.name);
-  
-  const team = await storage.createTeam({
-    serverId,
-    teamId,
-    name: role.name,
-    emoji,
-    roleId: role.id,
-    currency: initialCurrency,
-    rosterCount: 0,
-    rosterMax: rosterCap
-  });
-  
-  // Create settings if they don't exist
-  const existingSettings = await storage.getSettings(serverId);
-  if (!existingSettings) {
-    await storage.createSettings({
-      serverId,
-      guildName: interaction.guild?.name || 'Unknown Guild',
-      prefix: '!',
-      locale: 'en',
-      teamRosterCap: 22,
-      winCurrency: 10000000,
-      lossCurrency: 5000000,
-      defaultCurrency: 50000000,
-      setupComplete: false
-    });
-  }
-  
-  await interaction.reply({ 
-    content: getTranslation('team_added', locale as any)
-      .replace('{name}', team.name)
-      .replace('{emoji}', team.emoji),
-    ephemeral: false
-  });
 }
 
-// Helper function to handle viewing teams
-async function handleViewTeams(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  // Get teams
-  const teams = await storage.getTeams(serverId);
-  
-  // Create embed
-  const embed = createBaseEmbed(locale)
-    .setTitle('Teams')
-    .setDescription('All teams in the league');
-  
-  // Add team fields
-  if (teams.length === 0) {
-    embed.addFields({ name: 'No Teams', value: 'No teams have been added yet.' });
-  } else {
-    // For each team, get roster count and currency
-    for (const team of teams) {
-      const players = await storage.getPlayersByTeam(team.id);
-      
-      embed.addFields({
-        name: `${team.emoji} ${team.name}`,
-        value: `Roster: ${players.length}/${team.rosterMax}\nCurrency: ${team.currency?.toLocaleString() || 0}`,
-        inline: true
-      });
-    }
-  }
-  
-  await interaction.reply({ embeds: [embed] });
-}
-
-// Helper function to handle removing a team
-async function handleRemoveTeam(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const role = interaction.options.getRole('role');
-  
-  if (!role) {
-    await interaction.reply({ content: 'Role is required!', ephemeral: true });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, role.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: getTranslation('team_not_found', locale as any),
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Delete team
-  await storage.deleteTeam(team.id);
-  
-  await interaction.reply({ 
-    content: getTranslation('team_removed', locale as any)
-      .replace('{name}', team.name),
-    ephemeral: false
-  });
-}
-
-// Helper function to handle editing a team's emoji
-async function handleEditTeam(
-  interaction: ChatInputCommandInteraction,
-  serverId: string,
-  locale: string
-): Promise<void> {
-  const role = interaction.options.getRole('role');
-  const emoji = interaction.options.getString('emoji');
-  
-  if (!role || !emoji) {
-    await interaction.reply({ content: 'Role and emoji are required!', ephemeral: true });
-    return;
-  }
-  
-  // Validate emoji
-  if (!isValidEmoji(emoji)) {
-    await interaction.reply({ 
-      content: getTranslation('invalid_emoji', locale as any),
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Find the team
-  const team = await storage.getTeamByRoleId(serverId, role.id);
-  
-  if (!team) {
-    await interaction.reply({ 
-      content: getTranslation('team_not_found', locale as any),
-      ephemeral: true
-    });
-    return;
-  }
-  
-  // Update emoji
-  await storage.updateTeam(team.id, { emoji });
-  
-  await interaction.reply({ 
-    content: `Team ${team.name} emoji updated to ${emoji}`,
-    ephemeral: false
-  });
-}
-
-// Export all team-related commands
 export const teamsCommands = [
   teamsAddCommand,
-  teamSalariesCommand,
-  teamOwnersCommand,
-  teamTemplatesCommand
+  teamsArabicCommand
 ];
