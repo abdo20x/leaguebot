@@ -109,7 +109,8 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
     const emptyTeams = teamsWithCounts.filter(t => (t.rosterCount || 0) === 0);
     if (emptyTeams.length > 0) {
       description += '\nEmpty Teams\n';
-      for (const team of emptyTeams) {scription += `${team.emoji} ${team.name}\n`;
+      for (const team of emptyTeams) {
+        description += `${team.emoji} ${team.name}\n`;
       }
     }
 
