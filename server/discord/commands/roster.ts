@@ -102,7 +102,7 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
       const role = guild.roles.cache.get(team.roleId);
       const roleMention = role ? `<@&${team.roleId}>` : teamName;
 
-      description += `${colorCircle} **[ \`${rosterCount}\` ]/[ \`${rosterMax}\` ]** - ${teamEmoji} ${roleMention}\n`;
+      description += `${colorCircle} **\`${rosterCount}/${rosterMax}\`** - ${teamEmoji} ${roleMention}\n`;
     }
 
     // Add empty teams section if any exist
