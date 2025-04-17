@@ -33,7 +33,7 @@ export const setupCommand = {
     
     if (customId.startsWith('setup_page_')) {
       const pageNum = parseInt(customId.replace('setup_page_', ''));
-      await showSetupPage(interaction, pageNum);
+      await handlePageNavigation(interaction, pageNum);
     } 
     else if (customId.startsWith('setup_set_admin_')) {
       const userId = customId.replace('setup_set_admin_', '');
@@ -577,7 +577,9 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
     });
     
     // Combine all components (up to 5 rows maximum)
-    const allComponents = [pageSelectRow, navigationRow, ...additionalRows].slice(0, 5);
+    // Ensure all rows are ActionRowBuilder instances
+      const filteredRows = additionalRows.filter(row => row instanceof ActionRowBuilder);
+      const allComponents = [pageSelectRow, navigationRow, ...filteredRows].slice(0, 5);
     
     if (interaction.replied || interaction.deferred) {
       await interaction.editReply({ 
@@ -874,6 +876,12 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
       await interaction.reply(response);
     }
   }
+}
+
+// Fix page navigation
+async function handlePageNavigation(interaction: ButtonInteraction, targetPage: number) {
+  await interaction.deferUpdate();
+  await showSetupPage(interaction, targetPage);
 }
 
 // Add coach handler
