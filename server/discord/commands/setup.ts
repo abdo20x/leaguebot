@@ -124,10 +124,40 @@ async function handleSetupCommand(interaction: ChatInputCommandInteraction): Pro
   try {
     // Check if user has administrator permissions
     const member = interaction.member;
-    if (!member || !('permissions' in member) || 
-        (typeof member.permissions !== 'string' && !member.permissions.has('Administrator'))) {
+    if (!member) {
+      await interaction.editReply({ content: 'لم يتم العثور على العضو.' });
+      return;
+    }
+
+    // Handle different member permission types
+    let hasAdminPermission = false;
+    if (typeof member.permissions === 'string') {
+      hasAdminPermission = member.permissions.includes('ADMINISTRATOR');
+    } else if ('has' in member.permissions) {
+      hasAdminPermission = member.permissions.has('Administrator');
+    }
+
+    if (!hasAdminPermission) {
       await interaction.editReply({ content: 'يجب أن تكون مسؤولاً لاستخدام هذا الأمر.' });
       return;
+    }
+
+    // Create initial settings if they don't exist
+    let settings = await storage.getSettings(serverId);
+    if (!settings) {
+      settings = await storage.createSettings({
+        serverId,
+        guildName: interaction.guild?.name || '',
+        prefix: '!',
+        locale: 'ar',
+        teamRosterCap: 30,
+        winCurrency: 10000000,
+        lossCurrency: 5000000,
+        defaultCurrency: 50000000,
+        setupComplete: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
     }
     
     // Show the first page of setup
