@@ -5,7 +5,8 @@ import {
   Collection,
   Events,
   ButtonInteraction,
-  StringSelectMenuInteraction
+  StringSelectMenuInteraction,
+  ModalSubmitInteraction
 } from 'discord.js';
 import { registerCommands, handleCommand } from './commands';
 import { setupCommand } from './commands/setup';
@@ -94,8 +95,25 @@ export async function initializeBot(token: string) {
       // Handle select menu interactions
       if (interaction.isStringSelectMenu()) {
         const selectMenuInteraction = interaction as StringSelectMenuInteraction;
-        if (selectMenuInteraction.customId === 'setup_page_select') {
+        if (selectMenuInteraction.customId === 'setup_page_select' || 
+            selectMenuInteraction.customId === 'setup_team_type' || 
+            selectMenuInteraction.customId === 'setup_coach_type') {
           await setupCommand.handleSelectMenu(selectMenuInteraction);
+        }
+      }
+      
+      // Handle modal submissions
+      if (interaction.isModalSubmit()) {
+        const modalInteraction = interaction as ModalSubmitInteraction;
+        
+        // Handle team creation modal
+        if (modalInteraction.customId === 'add_team_modal') {
+          await handleAddTeamModal(modalInteraction);
+        }
+        
+        // Handle coach creation modal
+        if (modalInteraction.customId === 'add_coach_modal') {
+          await handleAddCoachModal(modalInteraction);
         }
       }
     });
@@ -217,6 +235,206 @@ export function getGuilds() {
   }
   
   return botStatus.guilds;
+}
+
+// Handler for team creation modal
+async function handleAddTeamModal(interaction: ModalSubmitInteraction) {
+  await interaction.deferReply({ ephemeral: true });
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.' });
+    return;
+  }
+  
+  try {
+    // Get values from modal
+    const teamName = interaction.fields.getTextInputValue('team_name');
+    const teamEmoji = interaction.fields.getTextInputValue('team_emoji');
+    const roleId = interaction.fields.getTextInputValue('team_role_id');
+    
+    // Validate emoji
+    const emojiRegex = /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/;
+    if (!emojiRegex.test(teamEmoji) && teamEmoji.length > 2) {
+      await interaction.editReply({ content: 'يرجى استخدام رمز تعبيري واحد (emoji) فقط.' });
+      return;
+    }
+    
+    // Check if role exists
+    const guild = interaction.guild;
+    if (!guild) {
+      await interaction.editReply({ content: 'خطأ: لم يتم العثور على السيرفر.' });
+      return;
+    }
+    
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+      await interaction.editReply({ content: 'خطأ: لم يتم العثور على الدور بمعرف الدور المحدد.' });
+      return;
+    }
+    
+    // Check if team already exists with this role ID
+    const existingTeamWithRole = await storage.getTeamByRoleId(serverId, roleId);
+    if (existingTeamWithRole) {
+      await interaction.editReply({ content: `هناك فريق موجود بالفعل بهذا الدور: ${existingTeamWithRole.name}` });
+      return;
+    }
+    
+    // Check if team already exists with this emoji
+    const existingTeamWithEmoji = await storage.getTeamByEmoji(serverId, teamEmoji);
+    if (existingTeamWithEmoji) {
+      await interaction.editReply({ content: `هناك فريق موجود بالفعل بهذا الرمز التعبيري: ${existingTeamWithEmoji.name}` });
+      return;
+    }
+    
+    // Generate a unique team ID
+    const teamId = `${serverId}_${teamName.toLowerCase().replace(/\s+/g, '_')}`;
+    
+    // Get settings for default values
+    const settings = await storage.getSettings(serverId);
+    const defaultCurrency = settings?.defaultCurrency || 50000000; // 50 million default
+    const rosterMax = settings?.teamRosterCap || 30;
+    
+    // Create the team
+    const team = await storage.createTeam({
+      serverId,
+      teamId,
+      name: teamName,
+      emoji: teamEmoji,
+      roleId,
+      currency: defaultCurrency,
+      rosterCount: 0,
+      rosterMax,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    await interaction.editReply({ content: `تم إنشاء الفريق ${teamEmoji} ${teamName} بنجاح!` });
+    
+    // Refresh the setup page - page 2 is teams setup
+    setTimeout(async () => {
+      try {
+        // Create a new button interaction to pass to showSetupPage
+        const message = await interaction.fetchReply();
+        const buttonInteraction = {
+          guildId: serverId,
+          guild: guild,
+          replied: true,
+          deferred: true,
+          // @ts-ignore - this is a simplified mock for the showSetupPage function
+          editReply: async (options: any) => {
+            return await interaction.editReply(options);
+          },
+          deferUpdate: async () => {
+            return await Promise.resolve();
+          }
+        } as any;
+        
+        // Import and call the showSetupPage function
+        const { showSetupPage } = require('./commands/setup');
+        await showSetupPage(buttonInteraction, 2);
+      } catch (error) {
+        console.error('Error refreshing setup page:', error);
+      }
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error handling add team modal:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء إنشاء الفريق. الرجاء المحاولة مرة أخرى.' });
+  }
+}
+
+// Handler for coach creation modal
+async function handleAddCoachModal(interaction: ModalSubmitInteraction) {
+  await interaction.deferReply({ ephemeral: true });
+  
+  const serverId = interaction.guildId;
+  if (!serverId) {
+    await interaction.editReply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.' });
+    return;
+  }
+  
+  try {
+    // Get values from modal
+    const coachName = interaction.fields.getTextInputValue('coach_name');
+    const shortCode = interaction.fields.getTextInputValue('coach_short_code').toUpperCase();
+    const roleId = interaction.fields.getTextInputValue('coach_role_id');
+    
+    // Validate shortcode (3 chars max)
+    if (shortCode.length > 3) {
+      await interaction.editReply({ content: 'الرمز المختصر يجب أن يكون 3 أحرف كحد أقصى.' });
+      return;
+    }
+    
+    // Check if role exists
+    const guild = interaction.guild;
+    if (!guild) {
+      await interaction.editReply({ content: 'خطأ: لم يتم العثور على السيرفر.' });
+      return;
+    }
+    
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+      await interaction.editReply({ content: 'خطأ: لم يتم العثور على الدور بمعرف الدور المحدد.' });
+      return;
+    }
+    
+    // Check if coach already exists with this role ID
+    const existingCoachWithRole = await storage.getCoachByRoleId(serverId, roleId);
+    if (existingCoachWithRole) {
+      await interaction.editReply({ content: `هناك مدرب موجود بالفعل بهذا الدور: ${existingCoachWithRole.name}` });
+      return;
+    }
+    
+    // Check if coach already exists with this shortCode
+    const existingCoachWithShortCode = await storage.getCoachByShortCode(serverId, shortCode);
+    if (existingCoachWithShortCode) {
+      await interaction.editReply({ content: `هناك مدرب موجود بالفعل بهذا الرمز المختصر: ${existingCoachWithShortCode.name}` });
+      return;
+    }
+    
+    // Create the coach
+    const coach = await storage.createCoach({
+      serverId,
+      name: coachName,
+      shortCode,
+      roleId,
+      createdAt: new Date()
+    });
+    
+    await interaction.editReply({ content: `تم إنشاء المدرب ${shortCode} ${coachName} بنجاح!` });
+    
+    // Refresh the setup page - page 3 is coaches setup
+    setTimeout(async () => {
+      try {
+        // Create a new button interaction to pass to showSetupPage
+        const message = await interaction.fetchReply();
+        const buttonInteraction = {
+          guildId: serverId,
+          guild: guild,
+          replied: true,
+          deferred: true,
+          // @ts-ignore - this is a simplified mock for the showSetupPage function
+          editReply: async (options: any) => {
+            return await interaction.editReply(options);
+          },
+          deferUpdate: async () => {
+            return await Promise.resolve();
+          }
+        } as any;
+        
+        // Import and call the showSetupPage function
+        const { showSetupPage } = require('./commands/setup');
+        await showSetupPage(buttonInteraction, 3);
+      } catch (error) {
+        console.error('Error refreshing setup page:', error);
+      }
+    }, 1000);
+    
+  } catch (error) {
+    console.error('Error handling add coach modal:', error);
+    await interaction.editReply({ content: 'حدث خطأ أثناء إنشاء المدرب. الرجاء المحاولة مرة أخرى.' });
+  }
 }
 
 // Export the client instance

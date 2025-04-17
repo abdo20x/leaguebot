@@ -49,39 +49,85 @@ export function createSetupEmbed(
 }
 
 // Create teams setup embed
-export function createTeamsSetupEmbed(
+export async function createTeamsSetupEmbed(
   serverId: string,
   pageTitle: string = 'Custom Teams'
-): EmbedBuilder {
+): Promise<EmbedBuilder> {
   const embed = createBaseEmbed()
     .setTitle('Win Lock Community Setup')
-    .setDescription(pageTitle);
+    .setDescription(pageTitle)
+    .setColor('#ff3e3e');
   
-  // This would ideally load the teams from the database
-  // and display them, but for now we'll just show a placeholder
-  embed.addFields(
-    { name: 'Teams Setup', value: 'Use the buttons below to add, edit, or remove teams.' },
-    { name: 'Current Teams', value: 'Loading teams...' }
-  );
+  // Get teams from database
+  try {
+    const teams = await storage.getTeams(serverId);
+    
+    if (teams.length === 0) {
+      embed.addFields(
+        { name: 'Teams', value: 'No teams have been added yet.' },
+        { name: 'Instructions', value: 'If you want to skip this or add each team individually, click `Next Page`\nOr use the "Custom Team Type" menu below to add teams.' }
+      );
+    } else {
+      // Create a formatted list of teams
+      let teamsList = '';
+      teams.forEach((team, index) => {
+        teamsList += `${index + 1} | ${team.emoji} <@&${team.roleId}>\n`;
+      });
+      
+      embed.addFields(
+        { name: 'Teams', value: teamsList },
+        { name: 'Instructions', value: 'If you want to add more teams or proceed with setup, use the buttons below.\nUse the "Custom Team Type" menu to add more teams.' }
+      );
+    }
+  } catch (error) {
+    console.error('Error loading teams:', error);
+    embed.addFields(
+      { name: 'Error', value: 'Failed to load teams. Please try again.' },
+      { name: 'Instructions', value: 'Use the "Custom Team Type" menu below to add teams manually.' }
+    );
+  }
   
   return embed;
 }
 
 // Create coaches setup embed
-export function createCoachesSetupEmbed(
+export async function createCoachesSetupEmbed(
   serverId: string,
   pageTitle: string = 'Custom Coaches'
-): EmbedBuilder {
+): Promise<EmbedBuilder> {
   const embed = createBaseEmbed()
     .setTitle('Win Lock Community Setup')
-    .setDescription(pageTitle);
+    .setDescription(pageTitle)
+    .setColor('#ff3e3e');
   
-  // This would ideally load the coaches from the database
-  // and display them, but for now we'll just show a placeholder
-  embed.addFields(
-    { name: 'Coaches Setup', value: 'Use the buttons below to add, edit, or remove coaches.' },
-    { name: 'Current Coaches', value: 'Loading coaches...' }
-  );
+  // Get coaches from database
+  try {
+    const coaches = await storage.getCoaches(serverId);
+    
+    if (coaches.length === 0) {
+      embed.addFields(
+        { name: 'Coaches', value: 'No coach roles have been added yet.' },
+        { name: 'Instructions', value: 'If you want to skip this or add each coach individually, click `Next Page`\nOr use the "Custom Coach Type" menu below to add coach roles.' }
+      );
+    } else {
+      // Create a formatted list of coaches
+      let coachesList = '';
+      coaches.forEach((coach, index) => {
+        coachesList += `${index + 1} | ${coach.shortCode} <@&${coach.roleId}>\n`;
+      });
+      
+      embed.addFields(
+        { name: 'Coaches', value: coachesList },
+        { name: 'Instructions', value: 'If you want to add more coaches or proceed with setup, use the buttons below.\nUse the "Custom Coach Type" menu to add more coaches.' }
+      );
+    }
+  } catch (error) {
+    console.error('Error loading coaches:', error);
+    embed.addFields(
+      { name: 'Error', value: 'Failed to load coaches. Please try again.' },
+      { name: 'Instructions', value: 'Use the "Custom Coach Type" menu below to add coaches manually.' }
+    );
+  }
   
   return embed;
 }
