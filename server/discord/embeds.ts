@@ -1,337 +1,271 @@
-// Discord message embeds for consistent UI
-
 import { 
   EmbedBuilder, 
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
-  SelectMenuBuilder,
-  SelectMenuOptionBuilder
+  ActionRowBuilder, 
+  ButtonBuilder, 
+  ButtonStyle, 
+  StringSelectMenuBuilder, 
+  StringSelectMenuOptionBuilder 
 } from "discord.js";
-import { formatTranslation, getTranslation } from "./translations";
-import { formatCurrency, getRosterPercentage } from "./utils";
-import { Team, Player, Coach, Transaction } from "@shared/schema";
+import { storage } from "../storage";
+import { Coach, Team, Player } from "@shared/schema";
+import { formatCurrency } from "./utils";
 
-// Base embed for all bot messages
+// Create base embed with consistent styling
 export function createBaseEmbed(locale: string = 'en'): EmbedBuilder {
   return new EmbedBuilder()
-    .setColor(0x9B59B6) // Peerless purple color
-    .setFooter({
-      text: getTranslation("bot_name", locale as any),
-      iconURL: "https://cdn.discordapp.com/embed/avatars/0.png"
-    })
+    .setColor('#3498db')
     .setTimestamp();
 }
 
-// Setup wizard embed
+// Create setup embed
 export function createSetupEmbed(
-  page: number,
-  totalPages: number,
-  locale: string = 'en'
+  title: string = 'Win Lock Community Setup',
+  subtitle: string = 'Use /detectsettings if you want to auto-detect settings prior to using this command',
+  description: string = ''
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale)
-    .setTitle(getTranslation("setup_title", locale as any))
-    .setDescription(formatTranslation("setup_page_title", locale as any, { current: page, total: totalPages }));
+  const embed = createBaseEmbed()
+    .setTitle(title)
+    .setDescription(subtitle);
   
-  if (page === 1) {
-    // Main setup page with instructions
-    embed.addFields(
-      { name: getTranslation("setup_peerless", locale as any), value: getTranslation("setup_auto_detect", locale as any) },
-      { name: "Page 1:", value: getTranslation("setup_page1", locale as any) },
-      { name: "Page 2:", value: getTranslation("setup_page2", locale as any) },
-      { name: "Page 3:", value: getTranslation("setup_page3", locale as any) },
-      { name: "Page 4:", value: getTranslation("setup_page4", locale as any) },
-      { name: "Page 5:", value: getTranslation("setup_page5", locale as any) },
-      { name: "Page 6:", value: getTranslation("setup_page6", locale as any) },
-      { name: "Page 7:", value: getTranslation("setup_page7", locale as any) },
-      { name: "Page 8:", value: getTranslation("setup_page8", locale as any) },
-      { name: "Page 9:", value: getTranslation("setup_page9", locale as any) },
-      { name: "Page 10:", value: getTranslation("setup_page10", locale as any) }
-    );
+  if (description) {
+    embed.addFields({ name: '\u200B', value: description });
   }
+
+  // Add pages information
+  embed.addFields(
+    { name: 'Page 1:', value: 'This Page', inline: true },
+    { name: 'Page 2:', value: 'Custom Teams', inline: true },
+    { name: 'Page 3:', value: 'Custom Coaches', inline: true },
+    { name: 'Page 4:', value: 'League Staff', inline: true },
+    { name: 'Page 5:', value: 'Basic Transaction Settings', inline: true },
+    { name: 'Page 6:', value: 'Advanced Transaction Settings', inline: true },
+    { name: 'Page 7:', value: 'Demand Settings', inline: true },
+    { name: 'Page 8:', value: 'Season Settings', inline: true },
+    { name: 'Page 9:', value: 'Notice Settings', inline: true },
+    { name: 'Page 10:', value: 'Miscellaneous Settings', inline: true }
+  );
   
   return embed;
 }
 
-// Custom teams setup embed
+// Create teams setup embed
 export function createTeamsSetupEmbed(
-  teams: { id: number; emoji: string; name: string }[],
-  locale: string = 'en'
+  serverId: string,
+  pageTitle: string = 'Custom Teams'
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale)
-    .setTitle(getTranslation("setup_title", locale as any))
-    .addFields(
-      { name: getTranslation("teams_title", locale as any), value: getTranslation("teams_skip_info", locale as any) }
-    );
+  const embed = createBaseEmbed()
+    .setTitle('Win Lock Community Setup')
+    .setDescription(pageTitle);
   
-  // Add teams field with formatted list
-  const teamsField = {
-    name: getTranslation("teams_header", locale as any),
-    value: teams.length > 0 
-      ? teams.map((team, index) => `${index + 1} | ${team.emoji} ${team.name}`).join('\n')
-      : "No teams yet"
-  };
-  
-  embed.addFields(teamsField);
-  embed.addFields({ name: "\u200B", value: getTranslation("teams_confused", locale as any) });
-  embed.setFooter({ text: formatTranslation("setup_page_title", locale as any, { current: 2, total: 10 }) });
+  // This would ideally load the teams from the database
+  // and display them, but for now we'll just show a placeholder
+  embed.addFields(
+    { name: 'Teams Setup', value: 'Use the buttons below to add, edit, or remove teams.' },
+    { name: 'Current Teams', value: 'Loading teams...' }
+  );
   
   return embed;
 }
 
-// Custom coaches setup embed
+// Create coaches setup embed
 export function createCoachesSetupEmbed(
-  coaches: { id: number; shortCode: string; name: string }[],
-  locale: string = 'en'
+  serverId: string,
+  pageTitle: string = 'Custom Coaches'
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale)
-    .setTitle(getTranslation("setup_title", locale as any))
-    .addFields(
-      { name: getTranslation("coaches_title", locale as any), value: getTranslation("coaches_skip_info", locale as any) }
-    );
+  const embed = createBaseEmbed()
+    .setTitle('Win Lock Community Setup')
+    .setDescription(pageTitle);
   
-  // Add coaches field with formatted list
-  const coachesField = {
-    name: getTranslation("coaches_header", locale as any),
-    value: coaches.length > 0 
-      ? coaches.map((coach, index) => `${index + 1} | ${coach.shortCode} @ ${coach.name}`).join('\n')
-      : "No coaches yet"
-  };
-  
-  embed.addFields(coachesField);
-  embed.addFields({ name: "\u200B", value: getTranslation("coaches_confused", locale as any) });
-  embed.setFooter({ text: formatTranslation("setup_page_title", locale as any, { current: 3, total: 10 }) });
+  // This would ideally load the coaches from the database
+  // and display them, but for now we'll just show a placeholder
+  embed.addFields(
+    { name: 'Coaches Setup', value: 'Use the buttons below to add, edit, or remove coaches.' },
+    { name: 'Current Coaches', value: 'Loading coaches...' }
+  );
   
   return embed;
 }
 
-// Roster counts embed
+// Create roster counts embed
 export function createRosterCountsEmbed(
-  teams: (Team & { players?: Player[] })[],
-  locale: string = 'en'
+  serverId: string,
+  teams: Team[]
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale)
-    .setTitle(getTranslation("roster_title", locale as any));
+  const embed = createBaseEmbed()
+    .setTitle('Win Lock Community Roster Counts')
+    .setFooter({ text: `Today at ${new Date().toLocaleTimeString()}` });
   
-  // Format each team with color and roster count
-  const teamFields = teams.map(team => {
-    const rosterPercent = getRosterPercentage(team.rosterCount || 0, team.rosterMax || 22);
-    const color = rosterPercent.color === "#2ecc71" ? "🟢" : 
-                  rosterPercent.color === "#f1c40f" ? "🟠" : "🔴";
-                  
-    return `${color} ${formatTranslation("roster_capacity", locale as any, { 
-      current: team.rosterCount || 0, 
-      max: team.rosterMax || 22 
-    })} - ${team.emoji} ${team.name}`;
-  });
+  let description = '';
   
-  if (teamFields.length > 0) {
-    embed.setDescription(teamFields.join('\n'));
+  // Add each team to the description
+  for (const team of teams) {
+    const rosterCount = team.rosterCount || 0;
+    const rosterMax = team.rosterMax || 30;
+    
+    // Create a colored circle based on percentage
+    let colorCircle = '🟢'; // Green for good
+    const percentage = (rosterCount / rosterMax) * 100;
+    
+    if (percentage < 30) {
+      colorCircle = '🟠'; // Orange for low
+    } else if (percentage > 80) {
+      colorCircle = '🔴'; // Red for nearly full
+    }
+    
+    description += `${colorCircle} ${rosterCount}/${rosterMax} - ${team.emoji} ${team.name}\n`;
   }
   
-  embed.addFields({ name: getTranslation("empty_teams", locale as any), value: "\u200B" });
+  // Check if there are teams with no players
+  const emptyTeams = teams.filter(team => (team.rosterCount || 0) === 0);
+  if (emptyTeams.length > 0) {
+    description += '\nEmpty Teams\n';
+    for (const team of emptyTeams) {
+      description += `${team.emoji} ${team.name}\n`;
+    }
+  }
+  
+  embed.setDescription(description);
   
   return embed;
 }
 
-// Team details embed
+// Create team details embed
 export function createTeamDetailsEmbed(
-  team: Team & { 
-    players?: Player[], 
+    team: Team,
+    players: Player[],
     coaches?: { coach: Coach, user: string }[] 
-  },
-  locale: string = 'en'
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale)
-    .setTitle(`${team.emoji} ${team.name}`)
+  const embed = createBaseEmbed()
+    .setTitle(`${team.name} Details`)
+    .setDescription(`${team.emoji} Balance: ${formatCurrency(team.balance || 0)}`)
     .addFields(
-      { 
-        name: "Roster", 
-        value: formatTranslation("roster_capacity", locale as any, { 
-          current: team.rosterCount || 0, 
-          max: team.rosterMax || 22 
-        }),
-        inline: true
-      },
-      {
-        name: "Currency",
-        value: formatCurrency(team.currency || 0),
-        inline: true
-      }
+      { name: 'Roster', value: `${team.rosterCount || 0}/${team.rosterMax || 30} players` },
+      { name: 'Status', value: team.active ? 'Active' : 'Inactive' }
     );
-  
-  // Add coaches if available
-  if (team.coaches && team.coaches.length > 0) {
-    const coachesText = team.coaches.map(c => 
-      `${c.coach.shortCode} <@${c.user}>`
-    ).join('\n');
-    
-    embed.addFields({ name: "Coaches", value: coachesText });
-  }
   
   // Add players if available
-  if (team.players && team.players.length > 0) {
-    const playersText = team.players.slice(0, 10).map(p => 
-      `<@${p.userId}>${p.nickname ? ` (${p.nickname})` : ''}`
-    ).join('\n');
-    
-    const morePlayersText = team.players.length > 10 ? 
-      `\n...and ${team.players.length - 10} more` : '';
-    
-    embed.addFields({ name: "Players", value: playersText + morePlayersText });
+  if (players && players.length > 0) {
+    const playersList = players.map(player => `<@${player.userId}>`).join(', ');
+    embed.addFields({ name: 'Players', value: playersList || 'No players' });
+  }
+  
+  // Add coaches if available
+  if (coaches && coaches.length > 0) {
+    const coachesList = coaches.map(c => `${c.coach.shortCode}: <@${c.user}>`).join('\n');
+    embed.addFields({ name: 'Coaches', value: coachesList || 'No coaches' });
   }
   
   return embed;
 }
 
-// Transaction embed
+// Create transaction embed
 export function createTransactionEmbed(
-  transaction: Transaction & {
+    transactionType: string,
+    amount: number,
+    description: string,
     sourceTeam?: Team,
     targetTeam?: Team,
     player?: Player
-  },
-  locale: string = 'en'
 ): EmbedBuilder {
-  const embed = createBaseEmbed(locale);
+  const embed = createBaseEmbed()
+    .setTitle(`${sourceTeam?.emoji || ''} ${sourceTeam?.name || ''} Transaction`);
   
-  if (transaction.transactionType === "transfer") {
-    embed.setTitle("Player Transfer");
-    
-    if (transaction.sourceTeam && transaction.targetTeam && transaction.player) {
-      embed.setDescription(
-        `Transfer from ${transaction.sourceTeam.emoji} ${transaction.sourceTeam.name} to ` +
-        `${transaction.targetTeam.emoji} ${transaction.targetTeam.name}`
-      );
-      
-      embed.addFields(
-        { name: "Player", value: `<@${transaction.player.userId}>`, inline: true },
-        { name: "Amount", value: formatCurrency(transaction.amount || 0), inline: true },
-        { name: "Status", value: transaction.status.toUpperCase(), inline: true }
-      );
-      
-      if (transaction.reason) {
-        embed.addFields({ name: "Reason", value: transaction.reason });
-      }
+  // Format the description based on transaction type
+  let formattedDesc = '';
+  if (transactionType === 'transfer' && sourceTeam && targetTeam && player) {
+    formattedDesc = `The ${sourceTeam.emoji} ${sourceTeam.name} have **${description}** <@${player.userId}>`;
+    if (targetTeam) {
+      formattedDesc += ` to ${targetTeam.emoji} ${targetTeam.name}`;
     }
-  } else if (transaction.transactionType === "currency") {
-    embed.setTitle("Currency Transaction");
-    
-    if (transaction.targetTeam) {
-      embed.setDescription(`Currency adjustment for ${transaction.targetTeam.emoji} ${transaction.targetTeam.name}`);
-      
-      embed.addFields(
-        { name: "Amount", value: formatCurrency(transaction.amount || 0), inline: true },
-        { name: "Status", value: transaction.status.toUpperCase(), inline: true }
-      );
-      
-      if (transaction.reason) {
-        embed.addFields({ name: "Reason", value: transaction.reason });
-      }
-    }
+  } else {
+    formattedDesc = description;
+  }
+  
+  embed.setDescription(formattedDesc);
+  
+  // Add coach information if available
+  if (player) {
+    embed.addFields({ name: 'Player', value: `<@${player.userId}>` });
+  }
+  
+  // Add roster count
+  if (sourceTeam) {
+    embed.addFields({ name: 'Roster', value: `${sourceTeam.rosterCount || 0}/${sourceTeam.rosterMax || 30}` });
   }
   
   return embed;
 }
 
-// Create buttons for navigation in setup wizard
+// Create navigation buttons
 export function createNavigationButtons(
   currentPage: number,
   totalPages: number,
-  locale: string = 'en'
+  baseId: string = 'page'
 ): ActionRowBuilder<ButtonBuilder> {
-  const prevButton = new ButtonBuilder()
-    .setCustomId(`setup_prev_${currentPage}`)
-    .setLabel(getTranslation("previous_page", locale as any))
-    .setStyle(ButtonStyle.Secondary)
-    .setDisabled(currentPage <= 1);
-  
-  const nextButton = new ButtonBuilder()
-    .setCustomId(`setup_next_${currentPage}`)
-    .setLabel(getTranslation("next_page", locale as any))
-    .setStyle(ButtonStyle.Secondary)
-    .setDisabled(currentPage >= totalPages);
-  
-  const goToPageButton = new ButtonBuilder()
-    .setCustomId(`setup_goto_${currentPage}`)
-    .setLabel(getTranslation("go_to_page", locale as any))
-    .setStyle(ButtonStyle.Primary);
-  
   return new ActionRowBuilder<ButtonBuilder>()
-    .addComponents(prevButton, goToPageButton, nextButton);
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`${baseId}_${currentPage > 1 ? currentPage - 1 : 1}`)
+        .setLabel('Previous')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(currentPage <= 1),
+      new ButtonBuilder()
+        .setCustomId(`${baseId}_${currentPage < totalPages ? currentPage + 1 : totalPages}`)
+        .setLabel('Next')
+        .setStyle(ButtonStyle.Primary)
+        .setDisabled(currentPage >= totalPages)
+    );
 }
 
-// Create select menu for page selection
+// Create page select menu
 export function createPageSelectMenu(
   currentPage: number,
-  totalPages: number,
-  locale: string = 'en'
-): ActionRowBuilder<SelectMenuBuilder> {
-  const selectMenu = new SelectMenuBuilder()
-    .setCustomId(`setup_page_select`)
-    .setPlaceholder(`Select a page`);
+  pages: { value: string, label: string }[]
+): ActionRowBuilder<StringSelectMenuBuilder> {
+  const options = pages.map(page => 
+    new StringSelectMenuOptionBuilder()
+      .setLabel(page.label)
+      .setValue(page.value)
+      .setDefault(page.value === currentPage.toString())
+  );
   
-  for (let i = 1; i <= totalPages; i++) {
-    selectMenu.addOptions(
-      new SelectMenuOptionBuilder()
-        .setLabel(`Page ${i}`)
-        .setValue(`${i}`)
-        .setDefault(i === currentPage)
+  return new ActionRowBuilder<StringSelectMenuBuilder>()
+    .addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId('page_select')
+        .setPlaceholder('Select a page')
+        .addOptions(options)
     );
-  }
-  
-  return new ActionRowBuilder<SelectMenuBuilder>()
-    .addComponents(selectMenu);
 }
 
-// Create action buttons for approving/rejecting transactions
+// Create transaction action buttons
 export function createTransactionActionButtons(
-  transactionId: number,
-  locale: string = 'en'
+  transactionId: number
 ): ActionRowBuilder<ButtonBuilder> {
-  const approveButton = new ButtonBuilder()
-    .setCustomId(`transaction_approve_${transactionId}`)
-    .setLabel("Approve")
-    .setStyle(ButtonStyle.Success);
-  
-  const rejectButton = new ButtonBuilder()
-    .setCustomId(`transaction_reject_${transactionId}`)
-    .setLabel("Reject")
-    .setStyle(ButtonStyle.Danger);
-  
   return new ActionRowBuilder<ButtonBuilder>()
-    .addComponents(approveButton, rejectButton);
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`transaction_approve_${transactionId}`)
+        .setLabel('Approve')
+        .setStyle(ButtonStyle.Success),
+      new ButtonBuilder()
+        .setCustomId(`transaction_reject_${transactionId}`)
+        .setLabel('Reject')
+        .setStyle(ButtonStyle.Danger)
+    );
 }
 
 // Create roles info embed
 export function createRolesInfoEmbed(locale: string = 'en'): EmbedBuilder {
-  const embed = createBaseEmbed(locale);
+  const embed = createBaseEmbed()
+    .setTitle('League Roles and Permissions')
+    .setDescription('Here are the roles and their permissions in the league:');
   
+  // Add role information
   embed.addFields(
-    {
-      name: "Roles",
-      value: `• ${getTranslation("role_operator", locale as any)}:\n` +
-             `• ${getTranslation("role_operator_desc", locale as any)}\n` +
-             `• ${getTranslation("role_manager", locale as any)}:\n` +
-             `• ${getTranslation("role_manager_desc", locale as any)}\n` +
-             `• ${getTranslation("role_manager_desc2", locale as any)}\n` +
-             `• ${getTranslation("role_referee", locale as any)}:\n` +
-             `• ${getTranslation("role_streamer", locale as any)}:\n` +
-             `• ${getTranslation("role_streamer_desc", locale as any)}`
-    },
-    {
-      name: "# Channels",
-      value: `• ${getTranslation("channel_challenges", locale as any)}:\n` +
-             `• ${getTranslation("channel_challenges_desc", locale as any)}\n` +
-             `• ${getTranslation("channel_decisions", locale as any)}:\n` +
-             `• ${getTranslation("channel_decisions_desc", locale as any)}\n` +
-             `• ${getTranslation("channel_notices", locale as any)}:\n` +
-             `• ${getTranslation("channel_notices_desc", locale as any)}\n` +
-             `• ${getTranslation("channel_setting_changes", locale as any)}:\n` +
-             `• ${getTranslation("channel_setting_changes_desc", locale as any)}\n` +
-             `• ${getTranslation("channel_streams", locale as any)}:\n` +
-             `• ${getTranslation("channel_streams_desc", locale as any)}`
-    }
+    { name: '🏆 League Admin', value: 'Full access to all commands and settings', inline: false },
+    { name: '👨‍💼 Coach', value: 'Can manage their team, sign/release players, and make transfer offers', inline: false },
+    { name: '⚽ Player', value: 'Can view team information and apply to teams as free agents', inline: false }
   );
   
   return embed;
