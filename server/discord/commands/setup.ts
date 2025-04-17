@@ -391,7 +391,7 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
             .setValue('4')
             .setDefault(currentPage === 4),
           new StringSelectMenuOptionBuilder()
-            .setLabel('Page 5: Settings')
+            .setLabel('Page 5: Transaction Settings')
             .setValue('5')
             .setDefault(currentPage === 5)
         ])
