@@ -375,7 +375,7 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
         .setPlaceholder('Select a page')
         .addOptions([
           new StringSelectMenuOptionBuilder()
-            .setLabel('Page 1: This Page')
+            .setLabel('Page 1: Setup Overview')
             .setValue('1')
             .setDefault(currentPage === 1),
           new StringSelectMenuOptionBuilder()
@@ -391,11 +391,7 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
             .setValue('4')
             .setDefault(currentPage === 4),
           new StringSelectMenuOptionBuilder()
-            .setLabel('Page 5: Basic Transaction Settings')
-            .setValue('5')
-            .setDefault(currentPage === 5),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('Page 5: Advanced Settings')
+            .setLabel('Page 5: Settings')
             .setValue('5')
             .setDefault(currentPage === 5)
         ])
