@@ -325,6 +325,24 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
             { name: 'League Manager', value: 'Can manage teams and players', inline: true },
             { name: 'Referee', value: 'Can manage matches and record results', inline: true }
           ]);
+
+        const staffActionRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_add_staff')
+              .setLabel('Add Staff Role')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_edit_staff')
+              .setLabel('Edit Staff Role')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId('setup_remove_staff')
+              .setLabel('Remove Staff Role')
+              .setStyle(ButtonStyle.Danger)
+          );
+        
+        additionalRows.push(staffActionRow);
         break;
         
       case 5:
@@ -338,6 +356,20 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
             { name: 'Loss Compensation', value: '5,000,000', inline: true },
             { name: 'Transfer Fee', value: '10% of player value', inline: true }
           ]);
+
+        const transactionActionRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_edit_currency')
+              .setLabel('Edit Currency Values')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_transfer_rules')
+              .setLabel('Transfer Rules')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(transactionActionRow);
         break;
         
       default:
@@ -417,7 +449,27 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
           new StringSelectMenuOptionBuilder()
             .setLabel('Page 5: Transaction Settings')
             .setValue('5')
-            .setDefault(currentPage === 5)
+            .setDefault(currentPage === 5),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Page 6: Advanced Transaction Settings')
+            .setValue('6')
+            .setDefault(currentPage === 6),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Page 7: Demand Settings')
+            .setValue('7')
+            .setDefault(currentPage === 7),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Page 8: Season Settings')
+            .setValue('8')
+            .setDefault(currentPage === 8),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Page 9: Match Settings')
+            .setValue('9')
+            .setDefault(currentPage === 9),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('Page 10: Review & Finish')
+            .setValue('10')
+            .setDefault(currentPage === 10)
         ])
     );
 }
