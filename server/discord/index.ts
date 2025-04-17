@@ -50,6 +50,16 @@ let botStatus = {
 // Flag to track if discord bot has been initialized
 let botInitialized = false;
 
+// Store temporary application data for users
+interface UserApplication {
+  serverId: string;
+  position?: string;
+  stats?: string;
+  preferredTeam?: string;
+}
+
+let userApplicationData: {[userId: string]: UserApplication} = {};
+
 // Initialize Discord bot
 export async function initializeBot(token: string) {
   try {
@@ -95,10 +105,91 @@ export async function initializeBot(token: string) {
       // Handle select menu interactions
       if (interaction.isStringSelectMenu()) {
         const selectMenuInteraction = interaction as StringSelectMenuInteraction;
+        
+        // Setup menu interactions
         if (selectMenuInteraction.customId === 'setup_page_select' || 
             selectMenuInteraction.customId === 'setup_team_type' || 
             selectMenuInteraction.customId === 'setup_coach_type') {
           await setupCommand.handleSelectMenu(selectMenuInteraction);
+        }
+        
+        // Free agent application position selection
+        else if (selectMenuInteraction.customId === 'position_select') {
+          const position = selectMenuInteraction.values[0];
+          const user = selectMenuInteraction.user;
+          
+          // Store position in temporary user application data
+          userApplicationData[user.id] = {
+            ...userApplicationData[user.id] || {},
+            position,
+            serverId: userApplicationData[user.id]?.serverId || ''
+          };
+          
+          // Send confirmation and ask for stats
+          await selectMenuInteraction.reply({ 
+            content: `تم اختيار المركز: ${position}. الآن سنسألك عن إحصائياتك.`, 
+            ephemeral: true 
+          });
+          
+          // Import and call askStatsQuestion
+          const { askStatsQuestion } = require('./commands/freeAgent');
+          await askStatsQuestion(user, position);
+          
+          // Set up message collector for stats
+          const dmChannel = await user.createDM();
+          const filter = (m: any) => m.author.id === user.id;
+          const collector = dmChannel.createMessageCollector({ filter, time: 300000, max: 1 });
+          
+          collector.on('collect', async (m) => {
+            const stats = m.content;
+            
+            // Store stats
+            userApplicationData[user.id] = {
+              ...userApplicationData[user.id],
+              stats
+            };
+            
+            // Show team selection
+            const { askPreferredTeamQuestion } = require('./commands/freeAgent');
+            await askPreferredTeamQuestion(user, userApplicationData[user.id].serverId || '');
+          });
+        }
+        
+        // Free agent application team selection
+        else if (selectMenuInteraction.customId === 'team_select') {
+          const teamId = selectMenuInteraction.values[0];
+          const user = selectMenuInteraction.user;
+          
+          // Store team preference
+          userApplicationData[user.id] = {
+            ...userApplicationData[user.id],
+            preferredTeam: teamId
+          };
+          
+          // Send confirmation
+          await selectMenuInteraction.reply({ 
+            content: `تم اختيار الفريق. جاري معالجة طلبك...`, 
+            ephemeral: true 
+          });
+          
+          // Submit the application
+          const { submitApplication } = require('./commands/freeAgent');
+          const userData = userApplicationData[user.id];
+          
+          if (userData && userData.position && userData.stats && userData.preferredTeam && userData.serverId) {
+            await submitApplication(
+              user,
+              userData.serverId,
+              userData.position,
+              userData.stats,
+              userData.preferredTeam
+            );
+            
+            // Clear the data after submission
+            delete userApplicationData[user.id];
+          } else {
+            await user.send('حدث خطأ في معالجة طلبك. يرجى المحاولة مرة أخرى باستخدام أمر `/تقديم`.');
+          }
         }
       }
       

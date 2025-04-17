@@ -76,6 +76,12 @@ async function handleFreeAgentApplication(interaction: ChatInputCommandInteracti
       content: `سيتم إرسال نموذج التقديم إليك عبر الرسائل الخاصة. يرجى التأكد من أن رسائلك الخاصة مفتوحة.` 
     });
     
+    // Store the server ID
+    const { userApplicationData } = require('../index');
+    userApplicationData[user.id] = {
+      serverId: serverId
+    };
+    
     // Start the application process in DMs
     await startPositionQuestion(user);
   } catch (error) {
@@ -116,6 +122,22 @@ async function startPositionQuestion(user: User): Promise<void> {
             .setLabel('CM - وسط')
             .setValue('CM')
             .setEmoji('🎮'),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('CDM - وسط دفاعي')
+            .setValue('CDM')
+            .setEmoji('🛡️'),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('CAM - وسط هجومي')
+            .setValue('CAM')
+            .setEmoji('⚡'),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('CB - مدافع')
+            .setValue('CB')
+            .setEmoji('🧱'),
+          new StringSelectMenuOptionBuilder()
+            .setLabel('GK - حارس مرمى')
+            .setValue('GK')
+            .setEmoji('🧤'),
         ])
     );
   
@@ -129,10 +151,18 @@ async function startPositionQuestion(user: User): Promise<void> {
 
 // Question 2: Stats
 async function askStatsQuestion(user: User, position: string): Promise<void> {
+  // Always ask for goals and assists for offensive positions
   let question = '';
-  
-  // Ask same question for all positions as specified
-  question = 'كم عدد اسيستاتك و اهدافك؟';
+  if (position === 'CM' || position === 'CAM' || position === 'CF' || position === 'RW' || position === 'LW') {
+    question = 'كم عدد اهدافك و مساعداتك؟';
+  } else if (position === 'CDM' || position === 'CB') {
+    question = 'كم عدد تدخلاتك ونسبة نجاحها؟';
+  } else if (position === 'GK') {
+    question = 'كم عدد التصديات لديك ونسبة الكلين شيت؟';
+  } else {
+    // Default question for any other position
+    question = 'كم عدد اهدافك و مساعداتك؟';
+  }
   
   const embed = new EmbedBuilder()
     .setColor('#3498db')
@@ -142,7 +172,7 @@ async function askStatsQuestion(user: User, position: string): Promise<void> {
   
   await user.send({ embeds: [embed] });
   
-  // Note: We'll handle the response in a message collector in the Discord client bot implementation
+  // The message collector will be set up in the Discord event handler
 }
 
 // Question 3: Preferred Team
