@@ -6,6 +6,8 @@ import { offerCommands } from './offers';
 import { currencyCommands } from './currency';
 import { teamsCommands } from './teams';
 import { coachesCommands } from './coaches';
+import { playerPricingCommands } from './playerPricing';
+import { freeAgentCommands } from './freeAgent';
 
 // Create commands collection
 const commands = new Collection<string, any>();
@@ -20,6 +22,8 @@ export function registerCommands(client: Client, token: string) {
     ...currencyCommands,
     ...teamsCommands,
     ...coachesCommands,
+    ...playerPricingCommands,
+    ...freeAgentCommands,
     // Add more commands here
   ];
   

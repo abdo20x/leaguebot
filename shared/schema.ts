@@ -54,7 +54,10 @@ export const players = pgTable("players", {
   teamId: integer("team_id").references(() => teams.id),
   username: text("username").notNull(),
   nickname: text("nickname"),
+  price: integer("price"),
+  position: text("position"),
   joinedAt: timestamp("joined_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Coaches
