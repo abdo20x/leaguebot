@@ -34,6 +34,56 @@ export const setupCommand = {
     if (customId.startsWith('setup_page_')) {
       const pageNum = parseInt(customId.replace('setup_page_', ''));
       await handlePageNavigation(interaction, pageNum);
+    }
+    // Advanced Transaction Settings handlers
+    else if (customId === 'setup_transfer_window') {
+      await handleTransferWindow(interaction);
+    }
+    else if (customId === 'setup_wage_structure') {
+      await handleWageStructure(interaction);
+    }
+    else if (customId === 'setup_contract_rules') {
+      await handleContractRules(interaction);
+    }
+    // Demand Settings handlers  
+    else if (customId === 'setup_market_influence') {
+      await handleMarketInfluence(interaction);
+    }
+    else if (customId === 'setup_position_demand') {
+      await handlePositionDemand(interaction);
+    }
+    else if (customId === 'setup_performance_impact') {
+      await handlePerformanceImpact(interaction);
+    }
+    // Season Settings handlers
+    else if (customId === 'setup_season_duration') {
+      await handleSeasonDuration(interaction);
+    }
+    else if (customId === 'setup_match_schedule') {
+      await handleMatchSchedule(interaction);
+    }
+    else if (customId === 'setup_season_events') {
+      await handleSeasonEvents(interaction);
+    }
+    // Match Settings handlers
+    else if (customId === 'setup_match_duration') {
+      await handleMatchDuration(interaction);
+    }
+    else if (customId === 'setup_scoring_rules') {
+      await handleScoringRules(interaction);
+    }
+    else if (customId === 'setup_match_rewards') {
+      await handleMatchRewards(interaction);
+    }
+    // Review & Finish handlers
+    else if (customId === 'setup_review_settings') {
+      await handleReviewSettings(interaction);
+    }
+    else if (customId === 'setup_save_settings') {
+      await handleSaveSettings(interaction);
+    }
+    else if (customId === 'setup_start_league') {
+      await handleStartLeague(interaction);
     } 
     else if (customId.startsWith('setup_set_admin_')) {
       const userId = customId.replace('setup_set_admin_', '');
@@ -447,10 +497,14 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setCustomId('setup_market_influence')
               .setLabel('Market Influence')
               .setStyle(ButtonStyle.Primary),
-            new ButtonBuilder()
+            new ButtonButton()
               .setCustomId('setup_position_demand')
               .setLabel('Position Demand')
-              .setStyle(ButtonStyle.Secondary)
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId('setup_performance_impact')
+              .setLabel('Performance Impact')
+              .setStyle(ButtonStyle.Success)
           );
         
         additionalRows.push(demandRow);
@@ -1029,6 +1083,67 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
 }
 
 // Detect coaches handler
+// Handler functions for all setup buttons
+async function handleTransferWindow(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring transfer window settings...', ephemeral: true });
+}
+
+async function handleWageStructure(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring wage structure...', ephemeral: true });
+}
+
+async function handleContractRules(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring contract rules...', ephemeral: true });
+}
+
+async function handleMarketInfluence(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring market influence settings...', ephemeral: true });
+}
+
+async function handlePositionDemand(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring position-based demand...', ephemeral: true });
+}
+
+async function handlePerformanceImpact(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring performance impact settings...', ephemeral: true });
+}
+
+async function handleSeasonDuration(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring season duration...', ephemeral: true });
+}
+
+async function handleMatchSchedule(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring match schedule...', ephemeral: true });
+}
+
+async function handleSeasonEvents(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring season events...', ephemeral: true });
+}
+
+async function handleMatchDuration(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring match duration...', ephemeral: true });
+}
+
+async function handleScoringRules(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring scoring rules...', ephemeral: true });
+}
+
+async function handleMatchRewards(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Configuring match rewards...', ephemeral: true });
+}
+
+async function handleReviewSettings(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Reviewing all settings...', ephemeral: true });
+}
+
+async function handleSaveSettings(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Saving all settings...', ephemeral: true });
+}
+
+async function handleStartLeague(interaction: ButtonInteraction) {
+  await interaction.reply({ content: 'Starting the league...', ephemeral: true });
+}
+
 async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
   
