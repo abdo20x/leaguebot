@@ -371,6 +371,152 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
         
         additionalRows.push(transactionActionRow);
         break;
+
+      case 6:
+        // Advanced Transaction Settings
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Advanced Transaction Settings')
+          .setDescription('Configure advanced transaction rules and limits')
+          .addFields([
+            { name: 'Transfer Window', value: 'Configure transfer window duration', inline: true },
+            { name: 'Wage Structure', value: 'Set wage caps and bonuses', inline: true },
+            { name: 'Contract Duration', value: 'Set contract length limits', inline: true }
+          ]);
+
+        const advTransactionRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_transfer_window')
+              .setLabel('Transfer Window')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_wage_structure')
+              .setLabel('Wage Structure')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId('setup_contract_rules')
+              .setLabel('Contract Rules')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(advTransactionRow);
+        break;
+
+      case 7:
+        // Demand Settings
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Demand Settings')
+          .setDescription('Configure player demand and market dynamics')
+          .addFields([
+            { name: 'Market Influence', value: 'Set market influence factors', inline: true },
+            { name: 'Position Demand', value: 'Configure position-based demand', inline: true },
+            { name: 'Performance Impact', value: 'Set performance-based value changes', inline: true }
+          ]);
+
+        const demandRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_market_influence')
+              .setLabel('Market Influence')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_position_demand')
+              .setLabel('Position Demand')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(demandRow);
+        break;
+
+      case 8:
+        // Season Settings
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Season Settings')
+          .setDescription('Configure season-related settings')
+          .addFields([
+            { name: 'Season Duration', value: 'Set season length', inline: true },
+            { name: 'Match Schedule', value: 'Configure match frequency', inline: true },
+            { name: 'Season Events', value: 'Set special events', inline: true }
+          ]);
+
+        const seasonRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_season_duration')
+              .setLabel('Season Duration')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_match_schedule')
+              .setLabel('Match Schedule')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId('setup_season_events')
+              .setLabel('Season Events')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(seasonRow);
+        break;
+
+      case 9:
+        // Match Settings
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Match Settings')
+          .setDescription('Configure match and gameplay settings')
+          .addFields([
+            { name: 'Match Duration', value: 'Set match length', inline: true },
+            { name: 'Scoring Rules', value: 'Configure scoring system', inline: true },
+            { name: 'Match Rewards', value: 'Set match-based rewards', inline: true }
+          ]);
+
+        const matchRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_match_duration')
+              .setLabel('Match Duration')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_scoring_rules')
+              .setLabel('Scoring Rules')
+              .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+              .setCustomId('setup_match_rewards')
+              .setLabel('Match Rewards')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(matchRow);
+        break;
+
+      case 10:
+        // Review & Finish
+        setupEmbed = new EmbedBuilder()
+          .setTitle('Review & Finish Setup')
+          .setDescription('Review your settings and complete the setup')
+          .addFields([
+            { name: 'Settings Review', value: 'Review all configurations', inline: true },
+            { name: 'Save Settings', value: 'Save and apply settings', inline: true },
+            { name: 'Start League', value: 'Begin league operations', inline: true }
+          ]);
+
+        const finishRow = new ActionRowBuilder<ButtonBuilder>()
+          .addComponents(
+            new ButtonBuilder()
+              .setCustomId('setup_review_settings')
+              .setLabel('Review Settings')
+              .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+              .setCustomId('setup_save_settings')
+              .setLabel('Save Settings')
+              .setStyle(ButtonStyle.Success),
+            new ButtonBuilder()
+              .setCustomId('setup_start_league')
+              .setLabel('Start League')
+              .setStyle(ButtonStyle.Secondary)
+          );
+        
+        additionalRows.push(finishRow);
+        break;
         
       default:
         // Default to main page
@@ -390,10 +536,10 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(pageNum <= 1),
         new ButtonBuilder()
-          .setCustomId(`setup_page_${pageNum < 5 ? pageNum + 1 : 5}`)
+          .setCustomId(`setup_page_${pageNum < 10 ? pageNum + 1 : 10}`)
           .setLabel('Next Page')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(pageNum >= 5)
+          .setDisabled(pageNum >= 10)
       );
     
     // Update setup progress
