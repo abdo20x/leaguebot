@@ -81,17 +81,20 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
     teamsWithCounts.sort((a, b) => (b.rosterCount || 0) - (a.rosterCount || 0));
 
     // Add active teams first
-    for (const team of teamsWithCounts.filter(t => (t.rosterCount || 0) > 0)) {
+    for (const team of teamsWithCounts) {
       const rosterCount = team.rosterCount || 0;
       const rosterMax = team.rosterMax || 30;
+      const { color, percentage } = getRosterPercentage(rosterCount, rosterMax);
 
-      // Create a colored circle based on count
-      let colorCircle = '🟢'; // Green for most teams
+      let colorCircle = '🟢'; // Green for good
       if (rosterCount < 10) {
         colorCircle = '🟡'; // Yellow for low count
       }
 
-      description += `${colorCircle} ${rosterCount}/${rosterMax} - ${team.name} ${team.emoji}\n`;
+      // Clean up team name and emoji display
+      const teamName = team.name.replace(/\\/g, '');
+      const teamEmoji = team.emoji || '';
+      description += `${colorCircle} ${rosterCount}/${rosterMax} ${teamEmoji} ${teamName}\n`;
     }
 
     // Add empty teams section if any exist
