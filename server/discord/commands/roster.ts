@@ -84,25 +84,32 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
     for (const team of teamsWithCounts) {
       const rosterCount = team.rosterCount || 0;
       const rosterMax = team.rosterMax || 30;
-      const { color, percentage } = getRosterPercentage(rosterCount, rosterMax);
 
+      // Determine circle color based on roster count
       let colorCircle = '🟢'; // Green for good
       if (rosterCount < 10) {
-        colorCircle = '🟡'; // Yellow for low count
+        colorCircle = '🟡'; // Yellow for low
+      } else if (rosterCount === 0) {
+        colorCircle = '🔴'; // Red for empty
       }
+
+      // Format roster count with black background
+      const rosterDisplay = `${rosterCount}/${rosterMax}`;
 
       // Clean up team name and emoji display
       const teamName = team.name.replace(/\\/g, '');
       const teamEmoji = team.emoji || '';
-      description += `${colorCircle} ${rosterCount}/${rosterMax} ${teamEmoji} ${teamName}\n`;
+      const role = guild.roles.cache.get(team.roleId);
+      const roleMention = role ? `<@&${team.roleId}>` : teamName;
+
+      description += `${colorCircle} ${rosterDisplay} - ${teamEmoji} ${roleMention}\n`;
     }
 
     // Add empty teams section if any exist
     const emptyTeams = teamsWithCounts.filter(t => (t.rosterCount || 0) === 0);
     if (emptyTeams.length > 0) {
       description += '\nEmpty Teams\n';
-      for (const team of emptyTeams) {
-        description += `${team.emoji} ${team.name}\n`;
+      for (const team of emptyTeams) {scription += `${team.emoji} ${team.name}\n`;
       }
     }
 
