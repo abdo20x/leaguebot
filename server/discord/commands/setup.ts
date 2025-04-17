@@ -48,6 +48,22 @@ export const setupCommand = {
     else if (customId === 'setup_remove_team') {
       await handleRemoveTeam(interaction);
     }
+    else if (customId === 'confirm_remove_team') {
+      // Handle team removal confirmation
+      const teamId = interaction.message.components[0].components[0].customId;
+      await storage.deleteTeam(interaction.guildId!, parseInt(teamId));
+      await interaction.reply({ content: 'Team removed successfully!', ephemeral: true });
+      await showSetupPage(interaction, 2); // Refresh teams page
+    }
+    else if (customId === 'setup_add_team') {
+      await handleAddTeam(interaction);
+    }
+    else if (customId === 'setup_edit_team') {
+      await handleEditTeam(interaction);
+    }
+    else if (customId === 'setup_remove_team') {
+      await handleRemoveTeam(interaction);
+    }
     else if (customId === 'setup_add_coach') {
       await handleAddCoach(interaction);
     }
@@ -787,7 +803,7 @@ async function handleEditTeam(interaction: ButtonInteraction | StringSelectMenuI
 async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMenuInteraction): Promise<void> {
   const serverId = interaction.guildId;
   if (!serverId) {
-    await interaction.reply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.', ephemeral: true });
+    await interaction.reply({ content: 'Error: Server ID not found.', ephemeral: true });
     return;
   }
   
@@ -796,7 +812,7 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
     const teams = await storage.getTeams(serverId);
     
     if (teams.length === 0) {
-      await interaction.reply({ content: 'لا توجد فرق لحذفها.', ephemeral: true });
+      await interaction.reply({ content: 'No teams to remove.', ephemeral: true });
       return;
     }
     
@@ -815,15 +831,36 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
           .setPlaceholder('Select team to remove')
           .addOptions(teamOptions)
       );
+
+    // Add confirmation button  
+    const confirmRow = new ActionRowBuilder<ButtonBuilder>()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('confirm_remove_team')
+          .setLabel('Confirm Remove')
+          .setStyle(ButtonStyle.Danger)
+      );
     
-    await interaction.reply({
-      content: 'اختر الفريق الذي تريد حذفه:',
-      components: [selectMenu],
-      ephemeral: true
-    });
+    if (interaction.deferred) {
+      await interaction.editReply({
+        content: 'Select the team to remove:',
+        components: [selectMenu, confirmRow],
+      });
+    } else {
+      await interaction.reply({
+        content: 'Select the team to remove:',
+        components: [selectMenu, confirmRow],
+        ephemeral: true
+      });
+    }
   } catch (error) {
     console.error('Error handling remove team:', error);
-    await interaction.reply({ content: 'حدث خطأ أثناء تحميل الفرق. الرجاء المحاولة مرة أخرى.', ephemeral: true });
+    const response = { content: 'Error loading teams. Please try again.', ephemeral: true };
+    if (interaction.deferred) {
+      await interaction.editReply(response);
+    } else {
+      await interaction.reply(response);
+    }
   }
 }
 
