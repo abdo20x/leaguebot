@@ -59,10 +59,10 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
     const teamsWithCounts = await Promise.all(teams.map(async team => {
       const role = guild.roles.cache.get(team.roleId);
       const count = role ? role.members.size : 0;
-      return { ...team, currentCount: count };
+      return { ...team, rosterCount: count };
     }));
     
-    teamsWithCounts.sort((a, b) => b.currentCount - a.currentCount);
+    teamsWithCounts.sort((a, b) => (b.rosterCount || 0) - (a.rosterCount || 0));
     
     // Create embed
     const embed = new EmbedBuilder()
@@ -75,7 +75,7 @@ async function handleRosterCommand(interaction: ChatInputCommandInteraction): Pr
     let description = '';
     
     for (const team of teamsWithCounts) {
-      const rosterCount = team.currentCount;
+      const rosterCount = team.rosterCount || 0;
       const rosterMax = team.rosterMax || 30;
       const { color, percentage } = getRosterPercentage(rosterCount, rosterMax);
       
