@@ -304,10 +304,10 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
           .setStyle(ButtonStyle.Secondary)
           .setDisabled(pageNum <= 1),
         new ButtonBuilder()
-          .setCustomId(`setup_page_${pageNum < 10 ? pageNum + 1 : 10}`)
+          .setCustomId(`setup_page_${pageNum < 5 ? pageNum + 1 : 5}`)
           .setLabel('Next Page')
           .setStyle(ButtonStyle.Primary)
-          .setDisabled(pageNum >= 10)
+          .setDisabled(pageNum >= 5)
       );
     
     // Update setup progress
@@ -365,25 +365,9 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
             .setValue('5')
             .setDefault(currentPage === 5),
           new StringSelectMenuOptionBuilder()
-            .setLabel('Page 6: Advanced Transaction Settings')
-            .setValue('6')
-            .setDefault(currentPage === 6),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('Page 7: Demand Settings')
-            .setValue('7')
-            .setDefault(currentPage === 7),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('Page 8: Season Settings')
-            .setValue('8')
-            .setDefault(currentPage === 8),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('Page 9: Notice Settings')
-            .setValue('9')
-            .setDefault(currentPage === 9),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('Page 10: Miscellaneous Settings')
-            .setValue('10')
-            .setDefault(currentPage === 10)
+            .setLabel('Page 5: Advanced Settings')
+            .setValue('5')
+            .setDefault(currentPage === 5)
         ])
     );
 }
