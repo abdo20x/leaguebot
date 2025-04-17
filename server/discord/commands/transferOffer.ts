@@ -142,23 +142,18 @@ async function handleTransferOffer(interaction: ChatInputCommandInteraction): Pr
       }
     }
     
-    // Create transfer offer embed for DM
+    // Create a smaller, more compact transfer offer embed for DM
     const offerEmbed = new EmbedBuilder()
       .setColor('#f1c40f')
-      .setTitle(`${sourceTeam.emoji} ${sourceTeam.name} - عرض انتقال`)
-      .setDescription(`عرض انضمام 💰`)
-      .addFields(
-        { name: '• الفريق المقدم للعرض', value: `${sourceTeam.emoji} ${sourceTeam.name}`, inline: false },
-        { name: 'المبلغ المعروض', value: `${formatCurrency(amount)}`, inline: false }
+      .setAuthor({ 
+        name: `عرض انتقال من ${sourceTeam.name}`
+      })
+      .setDescription(
+        `${sourceTeam.emoji} **${sourceTeam.name}** يقدم لك عرض انضمام\n` +
+        `💰 **المبلغ:** ${formatCurrency(amount)}\n` +
+        (targetTeam ? `🔄 **من:** ${targetTeam.emoji} ${targetTeam.name}` : '')
       )
-      .setFooter({ text: 'Win Lock Bot • نظام الانتقالات • يرجى قبول أو رفض العرض باستخدام الأزرار أدناه' });
-    
-    // Add current team if applicable
-    if (targetTeam) {
-      offerEmbed.addFields(
-        { name: 'الفريق الحالي', value: `${targetTeam.emoji} ${targetTeam.name}`, inline: false }
-      );
-    }
+      .setFooter({ text: 'Win Lock Bot • اختر من الأزرار أدناه' });
     
     // Create buttons for accept/reject
     const buttons = new ActionRowBuilder<ButtonBuilder>()

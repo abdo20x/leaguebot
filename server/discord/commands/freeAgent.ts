@@ -35,19 +35,14 @@ const freeAgentCommand = {
   }
 };
 
-// Arabic version - تقديم command
+// Arabic version - تقديم command (primary command)
 const freeAgentArabicCommand = {
   data: new SlashCommandBuilder()
     .setName('تقديم')
-    .setDescription('تقديم طلب كلاعب حر')
-    .addSubcommand(subcommand =>
-      subcommand
-        .setName('طلب')
-        .setDescription('تقديم طلب كلاعب حر')
-    ),
+    .setDescription('تقديم طلب كلاعب حر'),
   
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    // Process application in DMs - same logic as English version
+    // Process application in DMs
     await handleFreeAgentApplication(interaction);
   }
 };
@@ -91,12 +86,12 @@ async function handleFreeAgentApplication(interaction: ChatInputCommandInteracti
   }
 }
 
-// Question 1: Position
+// Question 1: Position (ايش مركزك)
 async function startPositionQuestion(user: User): Promise<void> {
   const embed = new EmbedBuilder()
     .setColor('#3498db')
     .setTitle('📝 نموذج تقديم لاعب حر')
-    .setDescription('ما هو مركزك المفضل في اللعب؟')
+    .setDescription('ايش مركزك؟')
     .setFooter({ text: 'الخطوة 1 من 3' });
   
   const row = new ActionRowBuilder<StringSelectMenuBuilder>()
@@ -110,10 +105,6 @@ async function startPositionQuestion(user: User): Promise<void> {
             .setValue('CF')
             .setEmoji('⚽'),
           new StringSelectMenuOptionBuilder()
-            .setLabel('ST - مهاجم')
-            .setValue('ST')
-            .setEmoji('⚽'),
-          new StringSelectMenuOptionBuilder()
             .setLabel('RW - جناح أيمن')
             .setValue('RW')
             .setEmoji('🏃'),
@@ -122,33 +113,9 @@ async function startPositionQuestion(user: User): Promise<void> {
             .setValue('LW')
             .setEmoji('🏃'),
           new StringSelectMenuOptionBuilder()
-            .setLabel('CAM - وسط مهاجم')
-            .setValue('CAM')
-            .setEmoji('🎯'),
-          new StringSelectMenuOptionBuilder()
             .setLabel('CM - وسط')
             .setValue('CM')
             .setEmoji('🎮'),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('CDM - وسط دفاعي')
-            .setValue('CDM')
-            .setEmoji('🛡️'),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('RB - ظهير أيمن')
-            .setValue('RB')
-            .setEmoji('🚫'),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('LB - ظهير أيسر')
-            .setValue('LB')
-            .setEmoji('🚫'),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('CB - قلب دفاع')
-            .setValue('CB')
-            .setEmoji('🧱'),
-          new StringSelectMenuOptionBuilder()
-            .setLabel('GK - حارس مرمى')
-            .setValue('GK')
-            .setEmoji('🧤')
         ])
     );
   
@@ -164,14 +131,8 @@ async function startPositionQuestion(user: User): Promise<void> {
 async function askStatsQuestion(user: User, position: string): Promise<void> {
   let question = '';
   
-  // Ask different questions based on position
-  if (position === 'GK') {
-    question = 'كم عدد الكلين شيت (Clean Sheets) وإنقاذات المرمى (Saves) التي حققتها؟';
-  } else if (['CB', 'RB', 'LB', 'CDM'].includes(position)) {
-    question = 'كم عدد قطع الكرات (Interceptions) والتدخلات (Tackles) التي قمت بها؟';
-  } else {
-    question = 'كم عدد الأهداف (Goals) والتمريرات الحاسمة (Assists) التي سجلتها؟';
-  }
+  // Ask same question for all positions as specified
+  question = 'كم عدد اسيستاتك و اهدافك؟';
   
   const embed = new EmbedBuilder()
     .setColor('#3498db')
@@ -191,7 +152,7 @@ async function askPreferredTeamQuestion(user: User, serverId: string): Promise<v
   const embed = new EmbedBuilder()
     .setColor('#3498db')
     .setTitle('📝 نموذج تقديم لاعب حر')
-    .setDescription('ما هو الفريق الذي ترغب في الانضمام إليه؟')
+    .setDescription('اي فريق حابب تدخل')
     .setFooter({ text: 'الخطوة 3 من 3' });
   
   // Create select menu with available teams
@@ -242,18 +203,19 @@ async function submitApplication(
   // Get preferred team
   const team = await storage.getTeam(parseInt(preferredTeam));
   
-  // Create compact embed for application
+  // Create a smaller, more compact embed for application
   const embed = new EmbedBuilder()
     .setColor('#00ff00')
-    .setTitle(`📝 تقديم لاعب حر: ${user.username}`)
-    .setThumbnail(user.displayAvatarURL())
-    .addFields(
-      { name: 'المركز', value: position, inline: true },
-      { name: 'الإحصائيات', value: stats, inline: true },
-      { name: 'الفريق المفضل', value: team ? `${team.emoji} ${team.name}` : 'غير محدد', inline: true }
+    .setAuthor({ 
+      name: `تقديم لاعب حر: ${user.username}`,
+      iconURL: user.displayAvatarURL()
+    })
+    .setDescription(
+      `**المركز:** ${position}\n` +
+      `**الإحصائيات:** ${stats}\n` +
+      `**الفريق المفضل:** ${team ? `${team.emoji} ${team.name}` : 'غير محدد'}`
     )
-    .setTimestamp()
-    .setFooter({ text: 'Win Lock Bot • نظام تقديم اللاعبين الأحرار' });
+    .setFooter({ text: 'Win Lock Bot' });
   
   // Send to applications channel
   await (channel as TextChannel).send({ embeds: [embed] });
