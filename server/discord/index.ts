@@ -114,7 +114,6 @@ export async function initializeBot(token: string) {
       // Handle select menu interactions
       if (interaction.isStringSelectMenu()) {
         const selectMenuInteraction = interaction as StringSelectMenuInteraction;
-        await selectMenuInteraction.deferUpdate();
 
         // Setup menu interactions
         if (selectMenuInteraction.customId === 'setup_page_select' || 
