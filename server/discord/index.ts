@@ -105,7 +105,7 @@ export async function initializeBot(token: string) {
             ephemeral: true 
           });
         }
-        } else if (buttonInteraction.customId.startsWith('transaction_')) {
+        if (buttonInteraction.customId.startsWith('transaction_')) {
           // Handle transaction buttons
           // This would be implemented in the specific command handlers
         }
