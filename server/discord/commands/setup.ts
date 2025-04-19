@@ -22,15 +22,15 @@ export const setupCommand = {
   data: new SlashCommandBuilder()
     .setName('setup')
     .setDescription('Configure league settings'),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleSetupCommand(interaction);
   },
-  
+
   // Handle button interactions for setup
   async handleButton(interaction: ButtonInteraction): Promise<void> {
     const customId = interaction.customId;
-    
+
     if (customId.startsWith('setup_page_')) {
       const pageNum = parseInt(customId.replace('setup_page_', ''));
       await handlePageNavigation(interaction, pageNum);
@@ -140,7 +140,7 @@ export const setupCommand = {
     }
     // Add other button handlers as needed for the setup flow
   },
-  
+
   // Handle select menu interactions for setup
   async handleSelectMenu(interaction: StringSelectMenuInteraction): Promise<void> {
     if (interaction.customId === 'setup_page_select') {
@@ -183,7 +183,7 @@ const setupArabicCommand = {
   data: new SlashCommandBuilder()
     .setName('إعداد')
     .setDescription('تكوين إعدادات الدوري'),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleSetupCommand(interaction);
   }
@@ -192,13 +192,13 @@ const setupArabicCommand = {
 // Handle setup command
 async function handleSetupCommand(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
-  
+
   const serverId = interaction.guildId;
   if (!serverId) {
     await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
-  
+
   try {
     // Check if user has administrator permissions
     const member = interaction.member;
@@ -237,7 +237,7 @@ async function handleSetupCommand(interaction: ChatInputCommandInteraction): Pro
         updatedAt: new Date()
       });
     }
-    
+
     // Show the first page of setup
     await showSetupPage(interaction, 1);
   } catch (error) {
@@ -253,11 +253,11 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
     await interaction.editReply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.' });
     return;
   }
-  
+
   try {
     // Get or create setup progress
     let progress = await storage.getSetupProgress(serverId);
-    
+
     if (!progress) {
       // Create initial setup progress
       progress = await storage.createSetupProgress({
@@ -268,16 +268,16 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
         data: {}
       });
     }
-    
+
     // Create the embed for the requested page
     let setupEmbed: EmbedBuilder;
     let additionalRows: ActionRowBuilder<any>[] = [];
-    
+
     switch (pageNum) {
       case 1:
         // Main setup page
         setupEmbed = createSetupEmbed('Win Lock Community Setup');
-        
+
         // Add admin button to set user with ID 1225190102469181542 as admin
         const adminActionRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(
@@ -286,14 +286,14 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Set Me as Admin')
               .setStyle(ButtonStyle.Success)
           );
-        
+
         additionalRows.push(adminActionRow);
         break;
-        
+
       case 2:
         // Custom Teams setup
         setupEmbed = await createTeamsSetupEmbed(serverId);
-        
+
         // Add team management buttons
         const teamActionRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(
@@ -310,12 +310,12 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Remove Team')
               .setStyle(ButtonStyle.Danger)
           );
-        
+
         // Add team selector (dropdown menu)
         const teamSelectRow = new ActionRowBuilder<StringSelectMenuBuilder>()
           .addComponents(
             new StringSelectMenuBuilder()
-              .setCustomId('setup_team_type')
+              .setCustomId('setup_team_select')
               .setPlaceholder('Custom Team Type')
               .addOptions([
                 new StringSelectMenuOptionBuilder()
@@ -332,14 +332,14 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
                   .setDescription('Remove an existing team')
               ])
           );
-        
+
         additionalRows.push(teamActionRow, teamSelectRow);
         break;
-        
+
       case 3:
         // Custom Coaches setup
         setupEmbed = await createCoachesSetupEmbed(serverId);
-        
+
         // Add coach management buttons
         const coachActionRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(
@@ -356,7 +356,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Remove Coach')
               .setStyle(ButtonStyle.Danger)
           );
-        
+
         // Add coach selector (dropdown menu)
         const coachSelectRow = new ActionRowBuilder<StringSelectMenuBuilder>()
           .addComponents(
@@ -378,9 +378,9 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
                   .setDescription('Remove a coach role')
               ])
           );
-        
+
         additionalRows.push(coachActionRow, coachSelectRow);
-        
+
         // Add detect custom coaches button
         const detectCoachesRow = new ActionRowBuilder<ButtonBuilder>()
           .addComponents(
@@ -389,10 +389,10 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Detect Custom Coaches')
               .setStyle(ButtonStyle.Success)
           );
-        
+
         additionalRows.push(detectCoachesRow);
         break;
-        
+
       case 4:
         // League Staff setup
         setupEmbed = new EmbedBuilder()
@@ -419,10 +419,10 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Remove Staff Role')
               .setStyle(ButtonStyle.Danger)
           );
-        
+
         additionalRows.push(staffActionRow);
         break;
-        
+
       case 5:
         // Transaction Settings
         setupEmbed = new EmbedBuilder()
@@ -446,7 +446,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Transfer Rules')
               .setStyle(ButtonStyle.Secondary)
           );
-        
+
         additionalRows.push(transactionActionRow);
         break;
 
@@ -476,7 +476,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Contract Rules')
               .setStyle(ButtonStyle.Secondary)
           );
-        
+
         additionalRows.push(advTransactionRow);
         break;
 
@@ -506,7 +506,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Performance Impact')
               .setStyle(ButtonStyle.Success)
           );
-        
+
         additionalRows.push(demandRow);
         break;
 
@@ -536,7 +536,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Season Events')
               .setStyle(ButtonStyle.Secondary)
           );
-        
+
         additionalRows.push(seasonRow);
         break;
 
@@ -566,7 +566,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Match Rewards')
               .setStyle(ButtonStyle.Secondary)
           );
-        
+
         additionalRows.push(matchRow);
         break;
 
@@ -596,19 +596,19 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setLabel('Start League')
               .setStyle(ButtonStyle.Secondary)
           );
-        
+
         additionalRows.push(finishRow);
         break;
-        
+
       default:
         // Default to main page
         setupEmbed = createSetupEmbed('Win Lock Community Setup', 'Page not found', 'The requested page does not exist.');
         pageNum = 1;
     }
-    
+
     // Create page selector menu
     const pageSelectRow = createPageSelector(pageNum);
-    
+
     // Create navigation buttons
     const navigationRow = new ActionRowBuilder<ButtonBuilder>()
       .addComponents(
@@ -623,18 +623,18 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
           .setStyle(ButtonStyle.Primary)
           .setDisabled(pageNum >= 10)
       );
-    
+
     // Update setup progress
     await storage.updateSetupProgress(serverId, {
       step: pageNum,
       lastUpdated: new Date()
     });
-    
+
     // Combine all components (up to 5 rows maximum)
     // Ensure all rows are ActionRowBuilder instances
       const filteredRows = additionalRows.filter(row => row instanceof ActionRowBuilder);
       const allComponents = [pageSelectRow, navigationRow, ...filteredRows].slice(0, 5);
-    
+
     if (interaction.replied || interaction.deferred) {
       await interaction.editReply({ 
         embeds: [setupEmbed],
@@ -707,19 +707,19 @@ function createPageSelector(currentPage: number): ActionRowBuilder<StringSelectM
 // Set user as admin handler
 async function handleSetAdmin(interaction: ButtonInteraction, userId: string): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
-  
+
   const serverId = interaction.guildId;
   const guild = interaction.guild;
-  
+
   if (!serverId || !guild) {
     await interaction.editReply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.' });
     return;
   }
-  
+
   try {
     // Get settings or create new settings if they don't exist
     let settings = await storage.getSettings(serverId);
-    
+
     if (!settings) {
       settings = await storage.createSettings({
         serverId,
@@ -734,17 +734,17 @@ async function handleSetAdmin(interaction: ButtonInteraction, userId: string): P
         createdAt: new Date(),
         updatedAt: new Date()
       });
-      
+
       await interaction.editReply({ content: `تم تعيين المستخدم <@${userId}> كمسؤول للدوري.` });
     } else {
       // Update settings
       await storage.updateSettings(serverId, {
         updatedAt: new Date()
       });
-      
+
       await interaction.editReply({ content: `تم تحديث المستخدم <@${userId}> كمسؤول للدوري. وتم حفظ ID: ${userId}` });
     }
-    
+
     // Create admin role or assign existing role
     try {
       let adminRole = guild.roles.cache.find(role => 
@@ -752,7 +752,7 @@ async function handleSetAdmin(interaction: ButtonInteraction, userId: string): P
         role.name.toLowerCase().includes('owner') ||
         role.name.toLowerCase().includes('مسؤول')
       );
-      
+
       if (!adminRole) {
         adminRole = await guild.roles.create({
           name: 'League Admin',
@@ -760,7 +760,7 @@ async function handleSetAdmin(interaction: ButtonInteraction, userId: string): P
           reason: 'League administration role'
         });
       }
-      
+
       // Find the member and add the role
       const member = await guild.members.fetch(userId);
       if (member) {
@@ -770,7 +770,7 @@ async function handleSetAdmin(interaction: ButtonInteraction, userId: string): P
       console.error('Error managing admin role:', roleError);
       // Continue execution even if role assignment fails
     }
-    
+
     // Refresh the setup page
     setTimeout(async () => {
       try {
@@ -819,7 +819,7 @@ async function handleAddTeam(interaction: ButtonInteraction | StringSelectMenuIn
       )
     ]
   });
-  
+
   // Modal submission will be handled by the modal submit event handler
 }
 
@@ -830,16 +830,16 @@ async function handleEditTeam(interaction: ButtonInteraction | StringSelectMenuI
     await interaction.reply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.', ephemeral: true });
     return;
   }
-  
+
   try {
     // Get all teams for this server
     const teams = await storage.getTeams(serverId);
-    
+
     if (teams.length === 0) {
       await interaction.reply({ content: 'لا توجد فرق لتعديلها. قم بإضافة فريق أولاً.', ephemeral: true });
       return;
     }
-    
+
     // Create select menu with team options
     const teamOptions = teams.map(team => {
       return new StringSelectMenuOptionBuilder()
@@ -847,7 +847,7 @@ async function handleEditTeam(interaction: ButtonInteraction | StringSelectMenuI
         .setValue(team.id.toString())
         .setDescription(`Role ID: ${team.roleId}`);
     });
-    
+
     const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(
         new StringSelectMenuBuilder()
@@ -855,7 +855,7 @@ async function handleEditTeam(interaction: ButtonInteraction | StringSelectMenuI
           .setPlaceholder('Select team to edit')
           .addOptions(teamOptions)
       );
-    
+
     await interaction.reply({
       content: 'اختر الفريق الذي تريد تعديله:',
       components: [selectMenu],
@@ -874,16 +874,16 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
     await interaction.reply({ content: 'Error: Server ID not found.', ephemeral: true });
     return;
   }
-  
+
   try {
     // Get all teams for this server
     const teams = await storage.getTeams(serverId);
-    
+
     if (teams.length === 0) {
       await interaction.reply({ content: 'No teams to remove.', ephemeral: true });
       return;
     }
-    
+
     // Create select menu with team options
     const teamOptions = teams.map(team => {
       return new StringSelectMenuOptionBuilder()
@@ -891,7 +891,7 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
         .setValue(team.id.toString())
         .setDescription(`Role ID: ${team.roleId}`);
     });
-    
+
     const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(
         new StringSelectMenuBuilder()
@@ -908,7 +908,7 @@ async function handleRemoveTeam(interaction: ButtonInteraction | StringSelectMen
           .setLabel('Confirm Remove')
           .setStyle(ButtonStyle.Danger)
       );
-    
+
     if (interaction.deferred) {
       await interaction.editReply({
         content: 'Select the team to remove:',
@@ -972,7 +972,7 @@ async function handleAddCoach(interaction: ButtonInteraction | StringSelectMenuI
       )
     ]
   });
-  
+
   // Modal submission will be handled by the modal submit event handler
 }
 
@@ -983,16 +983,16 @@ async function handleAssignCoach(interaction: ButtonInteraction | StringSelectMe
     await interaction.reply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.', ephemeral: true });
     return;
   }
-  
+
   try {
     // Get all coaches for this server
     const coaches = await storage.getCoaches(serverId);
-    
+
     if (coaches.length === 0) {
       await interaction.reply({ content: 'لا توجد أدوار المدربين لتعيينها. قم بإضافة دور مدرب أولاً.', ephemeral: true });
       return;
     }
-    
+
     // Create select menu with coach options
     const coachOptions = coaches.map(coach => {
       return new StringSelectMenuOptionBuilder()
@@ -1000,7 +1000,7 @@ async function handleAssignCoach(interaction: ButtonInteraction | StringSelectMe
         .setValue(coach.id.toString())
         .setDescription(`Role ID: ${coach.roleId}`);
     });
-    
+
     const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(
         new StringSelectMenuBuilder()
@@ -1008,7 +1008,7 @@ async function handleAssignCoach(interaction: ButtonInteraction | StringSelectMe
           .setPlaceholder('Select coach to assign')
           .addOptions(coachOptions)
       );
-    
+
     await interaction.reply({
       content: 'اختر المدرب الذي تريد تعيينه:',
       components: [selectMenu],
@@ -1030,7 +1030,7 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
 
     // Get all coaches for this server
     const coaches = await storage.getCoaches(serverId);
-    
+
     if (coaches.length === 0) {
       await interaction.reply({ 
         content: 'No coaches found to remove.',
@@ -1046,7 +1046,7 @@ async function handleRemoveCoach(interaction: ButtonInteraction | StringSelectMe
         .setValue(coach.id.toString())
         .setDescription(`Role ID: ${coach.roleId}`);
     });
-    
+
     const selectMenu = new ActionRowBuilder<StringSelectMenuBuilder>()
       .addComponents(
         new StringSelectMenuBuilder()
@@ -1170,13 +1170,13 @@ async function handleStartLeague(interaction: ButtonInteraction) {
 
 async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void> {
   await interaction.deferReply({ ephemeral: true });
-  
+
   const serverId = interaction.guildId;
   if (!serverId) {
     await interaction.editReply({ content: 'خطأ: لم يتم العثور على معرف السيرفر.' });
     return;
   }
-  
+
   try {
     // Get server roles
     const guild = interaction.guild;
@@ -1184,7 +1184,7 @@ async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void
       await interaction.editReply({ content: 'خطأ: لم يتم العثور على السيرفر.' });
       return;
     }
-    
+
     // Get roles that might be coach roles
     const roles = await guild.roles.fetch();
     const potentialCoachRoles = roles.filter(role => 
@@ -1192,14 +1192,14 @@ async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void
       role.name.toLowerCase().includes('مدرب') ||
       role.name.toLowerCase().includes('manager')
     );
-    
+
     if (potentialCoachRoles.size === 0) {
       await interaction.editReply({ content: 'لم يتم العثور على أي أدوار محتملة للمدربين. قم بإنشاء أدوار للمدربين ثم حاول مرة أخرى.' });
       return;
     }
-    
+
     let addedCount = 0;
-    
+
     // Add each potential coach role
     for (const [id, role] of potentialCoachRoles) {
       // Check if coach role already exists
@@ -1219,10 +1219,10 @@ async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void
             }
           }
         }
-        
+
         // Limit to 3 characters
         shortCode = shortCode.substring(0, 3);
-        
+
         // Create the coach
         await storage.createCoach({
           name: role.name,
@@ -1231,18 +1231,18 @@ async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void
           shortCode,
           createdAt: new Date()
         });
-        
+
         addedCount++;
       }
     }
-    
+
     await interaction.editReply({ content: `تم اكتشاف وإضافة ${addedCount} من أدوار المدربين.` });
-    
+
     // Refresh the setup page
     setTimeout(async () => {
       await showSetupPage(interaction, 3);
     }, 1000);
-    
+
   } catch (error) {
     console.error('Error detecting coaches:', error);
     await interaction.editReply({ content: 'حدث خطأ أثناء اكتشاف أدوار المدربين. الرجاء المحاولة مرة أخرى.' });

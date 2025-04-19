@@ -18,15 +18,14 @@ const winCommand = {
         .setDescription('The team ID or name')
         .setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     // Verify user
-    const allowedUserId = '1177267183584796803'; // Replace with your user ID
-    if (interaction.user.id !== allowedUserId) {
+    if (!interaction.memberPermissions?.has('Administrator')) {
       await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
-    
+
     await handleCurrencyCommand(interaction, 'win');
   }
 };
@@ -41,15 +40,14 @@ const lossCommand = {
         .setDescription('The team ID or name')
         .setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     // Verify user
-    const allowedUserId = '1177267183584796803'; // Replace with your user ID
-    if (interaction.user.id !== allowedUserId) {
+    if (!interaction.memberPermissions?.has('Administrator')) {
       await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
-    
+
     await handleCurrencyCommand(interaction, 'loss');
   }
 };
@@ -64,15 +62,14 @@ const winArabicCommand = {
         .setDescription('رمز الفريق أو اسمه')
         .setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     // Verify user
-    const allowedUserId = '1177267183584796803'; // Replace with your user ID
-    if (interaction.user.id !== allowedUserId) {
+    if (!interaction.memberPermissions?.has('Administrator')) {
       await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
-    
+
     await handleCurrencyCommand(interaction, 'win');
   }
 };
@@ -86,15 +83,14 @@ const lossArabicCommand = {
         .setDescription('رمز الفريق أو اسمه')
         .setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     // Verify user
-    const allowedUserId = '1177267183584796803'; // Replace with your user ID
-    if (interaction.user.id !== allowedUserId) {
+    if (!interaction.memberPermissions?.has('Administrator')) {
       await interaction.reply({ content: 'أنت غير مخول باستخدام هذا الأمر.', ephemeral: true });
       return;
     }
-    
+
     await handleCurrencyCommand(interaction, 'loss');
   }
 };
@@ -105,47 +101,47 @@ async function handleCurrencyCommand(
   type: 'win' | 'loss'
 ): Promise<void> {
   await interaction.deferReply();
-  
+
   const serverId = interaction.guildId;
   if (!serverId) {
     await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
-  
+
   try {
     // Get settings to determine award amounts
     const settings = await storage.getSettings(serverId);
     let amount = 0;
-    
+
     if (type === 'win') {
       amount = settings?.winCurrency || 10000000; // Default 10M
     } else {
       amount = settings?.lossCurrency || 5000000; // Default 5M
     }
-    
+
     // Get team 
     const teamIdentifier = interaction.options.getString('team', true);
     let team;
-    
+
     // Try to find by team name first (case insensitive)
     const teams = await storage.getTeams(serverId);
     team = teams.find(t => 
       t.name.toLowerCase() === teamIdentifier.toLowerCase() || 
       t.teamId === teamIdentifier
     );
-    
+
     if (!team) {
       await interaction.editReply({ content: `لم يتم العثور على الفريق: ${teamIdentifier}` });
       return;
     }
-    
+
     // Update team currency
     const newBalance = (team.currency || 0) + amount;
     await storage.updateTeam(team.id, {
       currency: newBalance,
       updatedAt: new Date()
     });
-    
+
     // Create transaction record
     const transaction = await storage.createTransaction({
       serverId,
@@ -161,7 +157,7 @@ async function handleCurrencyCommand(
       createdAt: new Date(),
       updatedAt: new Date()
     });
-    
+
     // Create and send embed
     const embed = new EmbedBuilder()
       .setColor(type === 'win' ? '#2ecc71' : '#f39c12')
@@ -171,14 +167,14 @@ async function handleCurrencyCommand(
         { name: 'New Balance', value: formatCurrency(newBalance) },
         { name: 'Awarded By', value: `<@${interaction.user.id}>` }
       );
-    
+
     await interaction.editReply({ embeds: [embed] });
-    
+
     // Notify team coaches
     try {
       const coachAssignments = await storage.getCoachAssignmentsByTeam(team.id);
       const guild = interaction.guild;
-      
+
       if (guild && coachAssignments.length > 0) {
         for (const assignment of coachAssignments) {
           try {
@@ -195,7 +191,7 @@ async function handleCurrencyCommand(
     } catch (error) {
       console.error('Error notifying coaches:', error);
     }
-    
+
   } catch (error) {
     console.error(`Error handling ${type} command:`, error);
     await interaction.editReply({ content: 'حدث خطأ أثناء معالجة الأمر. الرجاء المحاولة مرة أخرى.' });
@@ -211,7 +207,7 @@ const balanceCommand = {
       option.setName('team')
         .setDescription('The team ID or name (optional)')
         .setRequired(false)),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleBalanceCommand(interaction);
   }
@@ -226,7 +222,7 @@ const balanceArabicCommand = {
       option.setName('team')
         .setDescription('رمز الفريق أو اسمه (اختياري)')
         .setRequired(false)),
-  
+
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleBalanceCommand(interaction);
   }
@@ -234,57 +230,57 @@ const balanceArabicCommand = {
 
 async function handleBalanceCommand(interaction: ChatInputCommandInteraction): Promise<void> {
   await interaction.deferReply();
-  
+
   const serverId = interaction.guildId;
   if (!serverId) {
     await interaction.editReply({ content: 'هذا الأمر يمكن استخدامه فقط في سيرفر!' });
     return;
   }
-  
+
   try {
     const teamIdentifier = interaction.options.getString('team');
-    
+
     // If no team specified, try to get the user's team
     if (!teamIdentifier) {
       const coachAssignments = await storage.getCoachAssignmentsByUser(serverId, interaction.user.id);
-      
+
       if (coachAssignments.length === 0) {
         await interaction.editReply({ content: 'يرجى تحديد فريق أو استخدام هذا الأمر كمدرب.' });
         return;
       }
-      
+
       const team = await storage.getTeam(coachAssignments[0].teamId);
       if (!team) {
         await interaction.editReply({ content: 'لم يتم العثور على الفريق المرتبط بك.' });
         return;
       }
-      
+
       const embed = new EmbedBuilder()
         .setColor('#3498db')
         .setTitle(`${team.emoji} ${team.name} Balance`)
         .setDescription(`Current balance: **${formatCurrency(team.currency || 0)}**`);
-      
+
       await interaction.editReply({ embeds: [embed] });
       return;
     }
-    
+
     // Find team by name or ID
     const teams = await storage.getTeams(serverId);
     const team = teams.find(t => 
       t.name.toLowerCase() === teamIdentifier.toLowerCase() || 
       t.teamId === teamIdentifier
     );
-    
+
     if (!team) {
       await interaction.editReply({ content: `لم يتم العثور على الفريق: ${teamIdentifier}` });
       return;
     }
-    
+
     // Check if user is allowed to see this team's balance
     const isAdmin = interaction.memberPermissions?.has(PermissionFlagsBits.Administrator);
     const isCoach = (await storage.getCoachAssignmentsByUser(serverId, interaction.user.id))
       .some(a => a.teamId === team.id);
-    
+
     if (!isAdmin && !isCoach) {
       await interaction.editReply({ 
         content: 'ليس لديك صلاحية لعرض رصيد هذا الفريق. يجب أن تكون مدرباً للفريق أو مسؤولاً.',
@@ -292,15 +288,15 @@ async function handleBalanceCommand(interaction: ChatInputCommandInteraction): P
       });
       return;
     }
-    
+
     // Show balance
     const embed = new EmbedBuilder()
       .setColor('#3498db')
       .setTitle(`${team.emoji} ${team.name} Balance`)
       .setDescription(`Current balance: **${formatCurrency(team.currency || 0)}**`);
-    
+
     await interaction.editReply({ embeds: [embed] });
-    
+
   } catch (error) {
     console.error('Error handling balance command:', error);
     await interaction.editReply({ content: 'حدث خطأ أثناء معالجة الأمر. الرجاء المحاولة مرة أخرى.' });

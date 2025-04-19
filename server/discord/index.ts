@@ -94,8 +94,17 @@ export async function initializeBot(token: string) {
       // Handle button interactions for setup wizard
       if (interaction.isButton()) {
         const buttonInteraction = interaction as ButtonInteraction;
-        if (buttonInteraction.customId.startsWith('setup_')) {
-          await setupCommand.handleButton(buttonInteraction);
+        try {
+          if (buttonInteraction.customId.startsWith('setup_')) {
+            await setupCommand.handleButton(buttonInteraction);
+          }
+        } catch (error) {
+          console.error('Error handling button interaction:', error);
+          await buttonInteraction.reply({ 
+            content: 'An error occurred while processing the button. Please try again.',
+            ephemeral: true 
+          });
+        }
         } else if (buttonInteraction.customId.startsWith('transaction_')) {
           // Handle transaction buttons
           // This would be implemented in the specific command handlers

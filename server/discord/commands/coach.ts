@@ -56,14 +56,14 @@ const coachAddCommand = {
         .setName('view')
         .setDescription('View all coaches')
     ),
-  
+
   // Permission check - needs manage roles or administrator
   async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
     return interaction.memberPermissions?.has('ManageRoles') || 
            interaction.memberPermissions?.has('Administrator') || 
            false;
   },
-  
+
   // Execute the command
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const serverId = interaction.guildId;
@@ -71,13 +71,13 @@ const coachAddCommand = {
       await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
       return;
     }
-    
+
     // Detect language
     const locale = detectLanguage(interaction.guild?.name || '') || 'en';
-    
+
     // Get subcommand
     const subcommand = interaction.options.getSubcommand();
-    
+
     // Handle different subcommands
     switch (subcommand) {
       case 'add':
@@ -147,14 +147,14 @@ const coachArabicCommand = {
         .setName('عرض')
         .setDescription('عرض جميع المدربين')
     ),
-  
+
   // Permission check - same as English version
   async permissionCheck(interaction: ChatInputCommandInteraction): Promise<boolean> {
     return interaction.memberPermissions?.has('ManageRoles') || 
            interaction.memberPermissions?.has('Administrator') || 
            false;
   },
-  
+
   // Execute command - similar to English but with Arabic parameters
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const serverId = interaction.guildId;
@@ -162,19 +162,19 @@ const coachArabicCommand = {
       await interaction.reply({ content: 'لا يمكن استخدام هذا الأمر إلا في خادم!', ephemeral: true });
       return;
     }
-    
+
     // Always use Arabic locale for this command
     const locale = 'ar';
-    
+
     // Get subcommand
     const subcommand = interaction.options.getSubcommand();
-    
+
     // Handle different Arabic subcommands by mapping them to English handlers
     switch (subcommand) {
       case 'إضافة': // add
         const role = interaction.options.getRole('الدور');
         const shortcode = interaction.options.getString('الرمز');
-        
+
         // Create a modified interaction object with mapped options
         const addInteraction = {
           ...interaction,
@@ -184,13 +184,13 @@ const coachArabicCommand = {
             getString: (name: string) => name === 'shortcode' ? shortcode : null
           }
         } as ChatInputCommandInteraction;
-        
+
         await handleAddCoach(addInteraction, serverId, locale);
         break;
-        
+
       case 'إزالة': // remove
         const roleToRemove = interaction.options.getRole('الدور');
-        
+
         // Create a modified interaction with mapped options
         const removeInteraction = {
           ...interaction,
@@ -199,15 +199,15 @@ const coachArabicCommand = {
             getRole: (name: string) => name === 'role' ? roleToRemove : null
           }
         } as ChatInputCommandInteraction;
-        
+
         await handleRemoveCoach(removeInteraction, serverId, locale);
         break;
-        
+
       case 'تعيين': // assign
         const user = interaction.options.getUser('المستخدم');
         const coachRole = interaction.options.getRole('دور_المدرب');
         const team = interaction.options.getRole('الفريق');
-        
+
         // Create a modified interaction with mapped options
         const assignInteraction = {
           ...interaction,
@@ -221,14 +221,14 @@ const coachArabicCommand = {
             }
           }
         } as ChatInputCommandInteraction;
-        
+
         await handleAssignCoach(assignInteraction, serverId, locale);
         break;
-        
+
       case 'عرض': // view
         await handleViewCoaches(interaction, serverId, locale);
         break;
-        
+
       default:
         await interaction.reply({ content: 'أمر فرعي غير معروف!', ephemeral: true });
     }
@@ -243,15 +243,15 @@ async function handleAddCoach(
 ): Promise<void> {
   const role = interaction.options.getRole('role');
   const shortCode = interaction.options.getString('shortcode');
-  
+
   if (!role || !shortCode) {
     await interaction.reply({ content: 'Role and short code are required!', ephemeral: true });
     return;
   }
-  
+
   // Check if coach role already exists
   const existingCoach = await storage.getCoachByRoleId(serverId, role.id);
-  
+
   if (existingCoach) {
     await interaction.reply({ 
       content: getTranslation('coach_already_exists', locale as any),
@@ -259,10 +259,10 @@ async function handleAddCoach(
     });
     return;
   }
-  
+
   // Check if short code is already in use
   const existingShortCode = await storage.getCoachByShortCode(serverId, shortCode);
-  
+
   if (existingShortCode) {
     await interaction.reply({ 
       content: `Short code "${shortCode}" is already in use. Please choose a different short code.`,
@@ -270,7 +270,7 @@ async function handleAddCoach(
     });
     return;
   }
-  
+
   // Create the coach role
   const coach = await storage.createCoach({
     serverId,
@@ -278,7 +278,7 @@ async function handleAddCoach(
     name: role.name,
     shortCode
   });
-  
+
   await interaction.reply({ 
     content: getTranslation('coach_added', locale as any)
       .replace('{name}', coach.name)
@@ -294,15 +294,15 @@ async function handleRemoveCoach(
   locale: string
 ): Promise<void> {
   const role = interaction.options.getRole('role');
-  
+
   if (!role) {
     await interaction.reply({ content: 'Role is required!', ephemeral: true });
     return;
   }
-  
+
   // Find the coach
   const coach = await storage.getCoachByRoleId(serverId, role.id);
-  
+
   if (!coach) {
     await interaction.reply({ 
       content: getTranslation('coach_not_found', locale as any),
@@ -310,31 +310,31 @@ async function handleRemoveCoach(
     });
     return;
   }
-  
+
   try {
     // Delete coach assignments first
     const assignments = await storage.getCoachAssignmentsByCoach(coach.id);
     for (const assignment of assignments) {
       await storage.deleteCoachAssignment(assignment.id);
     }
-    
+
     // Then delete the coach
     await storage.deleteCoach(serverId, coach.id);
-    
+
     // Try to remove the role from server if possible
     try {
       const guild = interaction.guild;
       if (guild) {
-        const role = await guild.roles.fetch(role.id);
-        if (role) {
-          await role.delete();
+        const roleObj = await guild.roles.fetch(role.id);
+        if (roleObj) {
+          await roleObj.delete();
         }
       }
     } catch (roleError) {
       console.error('Error deleting role:', roleError);
       // Continue even if role deletion fails
     }
-    
+
     await interaction.reply({ 
       content: getTranslation('coach_removed', locale as any)
         .replace('{name}', coach.name),
@@ -358,15 +358,15 @@ async function handleAssignCoach(
   const user = interaction.options.getUser('user');
   const coachRoleObj = interaction.options.getRole('coach_role');
   const teamRoleObj = interaction.options.getRole('team');
-  
+
   if (!user || !coachRoleObj || !teamRoleObj) {
     await interaction.reply({ content: 'User, coach role, and team role are required!', ephemeral: true });
     return;
   }
-  
+
   // Find the coach
   const coach = await storage.getCoachByRoleId(serverId, coachRoleObj.id);
-  
+
   if (!coach) {
     await interaction.reply({ 
       content: `Coach role not found. Make sure to add it first with /coach add.`,
@@ -374,10 +374,10 @@ async function handleAssignCoach(
     });
     return;
   }
-  
+
   // Find the team
   const team = await storage.getTeamByRoleId(serverId, teamRoleObj.id);
-  
+
   if (!team) {
     await interaction.reply({ 
       content: `Team not found. Make sure to add it first with /teams add.`,
@@ -385,13 +385,13 @@ async function handleAssignCoach(
     });
     return;
   }
-  
+
   // Check if user is already assigned this coach role for this team
   const assignments = await storage.getCoachAssignmentsByUser(serverId, user.id);
   const existingAssignment = assignments.find(a => 
     a.coachId === coach.id && a.teamId === team.id
   );
-  
+
   if (existingAssignment) {
     await interaction.reply({ 
       content: `${user.username} is already assigned as ${coach.name} for team ${team.emoji} ${team.name}.`,
@@ -399,7 +399,7 @@ async function handleAssignCoach(
     });
     return;
   }
-  
+
   // Create coach assignment
   await storage.createCoachAssignment({
     serverId,
@@ -407,7 +407,7 @@ async function handleAssignCoach(
     userId: user.id,
     teamId: team.id
   });
-  
+
   // Try to assign both team and coach roles to the user
   try {
     const member = interaction.guild?.members.cache.get(user.id);
@@ -419,7 +419,7 @@ async function handleAssignCoach(
     console.error('Error assigning roles:', error);
     // Continue anyway, this is not critical
   }
-  
+
   await interaction.reply({ 
     content: `${user.username} has been assigned as ${coach.name} for team ${team.emoji} ${team.name}.`,
     ephemeral: false
@@ -434,12 +434,12 @@ async function handleViewCoaches(
 ): Promise<void> {
   // Get all coaches
   const coaches = await storage.getCoaches(serverId);
-  
+
   // Create embed
   const embed = createBaseEmbed(locale)
     .setTitle('Coaches')
     .setDescription('All coach roles in the league');
-  
+
   // Add coach fields
   if (coaches.length === 0) {
     embed.addFields({ name: 'No Coaches', value: 'No coach roles have been added yet.' });
@@ -448,19 +448,19 @@ async function handleViewCoaches(
     for (const coach of coaches) {
       // Get assignments for this coach
       const assignments = await storage.getCoachAssignmentsByCoach(coach.id);
-      
+
       // Format assignments
       let assignmentsText = "No assignments yet";
-      
+
       if (assignments.length > 0) {
         const formattedAssignments = await Promise.all(assignments.map(async (assignment) => {
           const team = await storage.getTeam(assignment.teamId || 0);
           return `<@${assignment.userId}> - ${team?.emoji || ''} ${team?.name || 'Unknown Team'}`;
         }));
-        
+
         assignmentsText = formattedAssignments.join('\n');
       }
-      
+
       // Add to embed
       embed.addFields({
         name: `${coach.shortCode} - ${coach.name}`,
@@ -468,7 +468,7 @@ async function handleViewCoaches(
       });
     }
   }
-  
+
   await interaction.reply({ embeds: [embed] });
 }
 
