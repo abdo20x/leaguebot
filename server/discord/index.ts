@@ -117,7 +117,9 @@ export async function initializeBot(token: string) {
         
         // Setup menu interactions
         if (selectMenuInteraction.customId === 'setup_page_select' || 
-            selectMenuInteraction.customId.startsWith('setup_')) {
+            selectMenuInteraction.customId.startsWith('setup_') ||
+            selectMenuInteraction.customId === 'setup_team_type' || 
+            selectMenuInteraction.customId === 'setup_coach_type') {
           await setupCommand.handleSelectMenu(selectMenuInteraction);
         }
         // Handle other select menu interactions
@@ -125,9 +127,7 @@ export async function initializeBot(token: string) {
           const teamId = selectMenuInteraction.values[0];
           await processTeamSelection(selectMenuInteraction.user, serverId, parseInt(teamId));
         }
-      } 
-            selectMenuInteraction.customId === 'setup_team_type' || 
-            selectMenuInteraction.customId === 'setup_coach_type') {
+      }
           await setupCommand.handleSelectMenu(selectMenuInteraction);
         }
         
