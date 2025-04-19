@@ -76,11 +76,12 @@ async function handleFreeAgentApplication(interaction: ChatInputCommandInteracti
       content: `سيتم إرسال نموذج التقديم إليك عبر الرسائل الخاصة. يرجى التأكد من أن رسائلك الخاصة مفتوحة.` 
     });
     
-    // Store the server ID
-    const { userApplicationData } = require('../index');
-    userApplicationData[user.id] = {
-      serverId: serverId
-    };
+    // Store the server ID in userApplicationData
+    if (!userApplicationData[user.id]) {
+      userApplicationData[user.id] = {};
+    }
+    userApplicationData[user.id].serverId = serverId;
+    userApplicationData[user.id].step = 1;
     
     // Start the application process in DMs
     await startPositionQuestion(user);
