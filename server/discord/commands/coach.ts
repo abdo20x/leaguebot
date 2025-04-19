@@ -311,20 +311,42 @@ async function handleRemoveCoach(
     return;
   }
   
-  // Delete coach
-  await storage.deleteCoach(coach.id);
-  
-  // Also remove any coach assignments
-  const assignments = await storage.getCoachAssignmentsByCoach(coach.id);
-  for (const assignment of assignments) {
-    await storage.deleteCoachAssignment(assignment.id);
+  try {
+    // Delete coach assignments first
+    const assignments = await storage.getCoachAssignmentsByCoach(coach.id);
+    for (const assignment of assignments) {
+      await storage.deleteCoachAssignment(assignment.id);
+    }
+    
+    // Then delete the coach
+    await storage.deleteCoach(serverId, coach.id);
+    
+    // Try to remove the role from server if possible
+    try {
+      const guild = interaction.guild;
+      if (guild) {
+        const role = await guild.roles.fetch(role.id);
+        if (role) {
+          await role.delete();
+        }
+      }
+    } catch (roleError) {
+      console.error('Error deleting role:', roleError);
+      // Continue even if role deletion fails
+    }
+    
+    await interaction.reply({ 
+      content: getTranslation('coach_removed', locale as any)
+        .replace('{name}', coach.name),
+      ephemeral: false
+    });
+  } catch (error) {
+    console.error('Error removing coach:', error);
+    await interaction.reply({
+      content: 'An error occurred while removing the coach. Please try again.',
+      ephemeral: true
+    });
   }
-  
-  await interaction.reply({ 
-    content: getTranslation('coach_removed', locale as any)
-      .replace('{name}', coach.name),
-    ephemeral: false
-  });
 }
 
 // Helper function to handle assigning a coach to a team

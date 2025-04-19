@@ -497,7 +497,7 @@ export async function showSetupPage(interaction: ChatInputCommandInteraction | B
               .setCustomId('setup_market_influence')
               .setLabel('Market Influence')
               .setStyle(ButtonStyle.Primary),
-            new ButtonButton()
+            new ButtonBuilder()
               .setCustomId('setup_position_demand')
               .setLabel('Position Demand')
               .setStyle(ButtonStyle.Secondary),
