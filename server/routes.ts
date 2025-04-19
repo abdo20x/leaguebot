@@ -11,7 +11,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create WebSocket server for real-time updates
   const wss = new WebSocketServer({ 
     server: httpServer,
-    path: '/ws'
+    path: '/ws',
+    clientTracking: true,
+    maxPayload: 50 * 1024 * 1024 // 50MB max payload
+  });
+
+  // Handle server-level errors
+  wss.on('error', (error) => {
+    console.error('WebSocket Server Error:', error);
   });
   
   // Handle WebSocket connections

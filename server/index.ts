@@ -59,7 +59,7 @@ app.use((req, res, next) => {
       console.warn("DISCORD_BOT_TOKEN is not set in environment variables");
       console.log("Running in web interface-only mode (Discord bot will be unavailable)");
     }
-    
+
     // Initialize Express server and register routes
     const server = await registerRoutes(app);
 
