@@ -21,7 +21,8 @@ import { createSetupEmbed, createTeamsSetupEmbed, createCoachesSetupEmbed } from
 export const setupCommand = {
   data: new SlashCommandBuilder()
     .setName('setup')
-    .setDescription('Configure league settings'),
+    .setDescription('Configure league settings')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     await handleSetupCommand(interaction);
@@ -191,7 +192,7 @@ const setupArabicCommand = {
 
 // Handle setup command
 async function handleSetupCommand(interaction: ChatInputCommandInteraction): Promise<void> {
-  await interaction.deferReply();
+  await interaction.deferReply({ ephemeral: true });
 
   const serverId = interaction.guildId;
   if (!serverId) {
@@ -1265,3 +1266,39 @@ export const setupCommands = [
   setupCommand,
   setupArabicCommand
 ];
+async function setupChannels(interaction: ChatInputCommandInteraction, serverId: string) {
+  try {
+    // Create channels if they don't exist
+    const guild = interaction.guild;
+    if (!guild) return;
+
+    const transactionChannel = await guild.channels.create({
+      name: 'transactions',
+      type: ChannelType.GuildText,
+      topic: 'All team transactions and transfers'
+    });
+
+    const freeAgentChannel = await guild.channels.create({
+      name: 'free-agents',
+      type: ChannelType.GuildText,
+      topic: 'Free agent applications and listings'
+    });
+
+    // Save channel IDs
+    await storage.updateChannels(serverId, {
+      transactions: transactionChannel.id,
+      applications: freeAgentChannel.id
+    });
+
+    await interaction.followUp({ 
+      content: 'Transaction and free agent channels have been set up!',
+      ephemeral: true 
+    });
+  } catch (error) {
+    console.error('Error setting up channels:', error);
+    await interaction.followUp({ 
+      content: 'Error setting up channels. Please check bot permissions.',
+      ephemeral: true 
+    });
+  }
+}
