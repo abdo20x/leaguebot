@@ -1249,6 +1249,18 @@ async function handleDetectCoaches(interaction: ButtonInteraction): Promise<void
   }
 }
 
+async function handleSetupButton(interaction: ButtonInteraction): Promise<void> {
+  // Handle button interactions here based on customId
+  if (interaction.customId === 'setup_currency') {
+    await interaction.reply({ content: 'Currency settings!' });
+  } else if (interaction.customId === 'setup_positions') {
+    await interaction.reply({ content: 'Position settings!' });
+  } else if (interaction.customId === 'setup_roles') {
+    await interaction.reply({ content: 'Role settings!' });
+  }
+}
+
+
 export const setupCommands = [
   setupCommand,
   setupArabicCommand

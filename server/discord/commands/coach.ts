@@ -312,6 +312,9 @@ async function handleRemoveCoach(
   }
 
   try {
+    // Defer reply since this might take a moment
+    await interaction.deferReply();
+
     // Delete coach assignments first
     const assignments = await storage.getCoachAssignmentsByCoach(coach.id);
     for (const assignment of assignments) {
@@ -335,14 +338,14 @@ async function handleRemoveCoach(
       // Continue even if role deletion fails
     }
 
-    await interaction.reply({ 
+    await interaction.editReply({ 
       content: getTranslation('coach_removed', locale as any)
         .replace('{name}', coach.name),
       ephemeral: false
     });
   } catch (error) {
     console.error('Error removing coach:', error);
-    await interaction.reply({
+    await interaction.editReply({
       content: 'An error occurred while removing the coach. Please try again.',
       ephemeral: true
     });
